@@ -683,28 +683,38 @@ function parseYearData(rows, year, cfg) {
   }
 
   // Lecture Marge (12 mois) — seulement si margeStart défini
-  if (margeStart !== null) {
-    // Trouver l'en-tête de la section marge pour repérer la colonne évolution
-    const margeHeaderRow = rows[margeStart - 1] || [];
-    let colYearM = -1, colEvolM = -1;
-    for (let c = 0; c < margeHeaderRow.length; c++) {
-      const h = margeHeaderRow[c].replace(/"/g,'').trim();
-      if (h === String(year)) colYearM = c;
-    }
-    for (let c = colYearM + 1; c < margeHeaderRow.length; c++) {
-      const h = margeHeaderRow[c].replace(/"/g,'').trim().toLowerCase();
-      if (h.includes('vol') || h.includes('%')) { colEvolM = c; break; }
-    }
-    // Si pas d'en-tête propre, on suppose même disposition que CA
-    if (colYearM < 0) colYearM = colYear;
+if (margeStart !== null) {
+  const margeHeaderRow = rows[margeStart - 1] || [];
+  let colYearM = -1, colEvolM = -1;
 
-    for (let m = 0; m < 12; m++) {
-      const row = rows[margeStart + m];
-      if (!row) { marge.push(null); evolMarge.push(null); continue; }
-      marge.push(parseEuro(row[colYearM >= 0 ? colYearM : 2]));
-      evolMarge.push(colEvolM >= 0 ? parsePct(row[colEvolM]) : null);
+  for (let c = 0; c < margeHeaderRow.length; c++) {
+    const h = margeHeaderRow[c].replace(/"/g, '').trim();
+    if (h === String(year)) colYearM = c;
+  }
+  // Cherche % évol après la colonne de l'année (marge)
+  for (let c = colYearM + 1; c < margeHeaderRow.length; c++) {
+    const h = margeHeaderRow[c].replace(/"/g, '').trim().toLowerCase();
+    if (h.includes('vol') || h.includes('%')) { colEvolM = c; break; }
+  }
+
+  // ✅ NOUVEAU fallback intelligent : si colonne non trouvée,
+  // chercher la dernière colonne non-vide avec des valeurs numériques
+  // plutôt que de copier aveuglément colYear
+  if (colYearM < 0) {
+    // Trouver la colonne de la dernière valeur numérique sur la 1ère ligne de données marge
+    const firstDataRow = rows[margeStart] || [];
+    for (let c = firstDataRow.length - 1; c >= 1; c--) {
+      if (parseEuro(firstDataRow[c]) !== null) { colYearM = c; break; }
     }
   }
+
+  for (let m = 0; m < 12; m++) {
+    const row = rows[margeStart + m];
+    if (!row) { marge.push(null); evolMarge.push(null); continue; }
+    marge.push(parseEuro(row[colYearM >= 0 ? colYearM : 2]));
+    evolMarge.push(colEvolM >= 0 ? parsePct(row[colEvolM]) : null);
+  }
+}
 
   return { ca, marge, evolCA, evolMarge };
 }
