@@ -243,6 +243,7 @@ function hdr(s){ return (s||'').replace(/"/g,'').replace(/[\u00a0\u202f]/g,' ').
 
 // ─── RECHERCHE DE COLONNE ────────────────────────────────
 // Cherche la colonne dont l'en-tête correspond à `year` (string ou number)
+// Cherche la colonne dont l'en-tête = year (ex: "2026")
 function findCol(row, year) {
   const target = String(year);
   for (let c=0;c<row.length;c++){
@@ -250,46 +251,85 @@ function findCol(row, year) {
   }
   return -1;
 }
-// Cherche la 1ère colonne contenant '%' ou 'vol' après afterCol
-function findEvolCol(row, afterCol) {
-  for (let c=afterCol+1;c<row.length;c++){
-    const h=hdr(row[c]).toLowerCase();
-    if(h.includes('%')||h.includes('vol')) return c;
+
+// Cherche la colonne % évol DANS LES DONNÉES (pas dans l'en-tête qui est souvent vide).
+// Lit la 1ère ligne de données et cherche la 1ère cellule qui ressemble à un % après afterCol.
+function findEvolColInData(rows, dataStartIdx, afterCol) {
+  // Cherche sur les 3 premières lignes de données non-vides
+  for (let r=dataStartIdx; r<Math.min(dataStartIdx+12, rows.length); r++) {
+    const row = rows[r] || [];
+    for (let c=afterCol+1; c<row.length; c++) {
+      const v = hdr(row[c]);
+      // Une cellule % ressemble à "20,65%" ou "-3,77%" ou "4,54 %"
+      if (/^-?\d+[,.]?\d*\s*%$/.test(v) || (v.includes('%') && /\d/.test(v))) {
+        // Vérifier que c'est cohérent sur plusieurs lignes
+        let hits=0;
+        for (let r2=dataStartIdx; r2<Math.min(dataStartIdx+12,rows.length); r2++) {
+          const v2=hdr((rows[r2]||[])[c]||'');
+          if(v2===''||/^-?\d+[,.]?\d*\s*%$/.test(v2)||(v2.includes('%')&&/\d/.test(v2))) hits++;
+        }
+        if(hits>=3) return c;
+      }
+    }
+    break; // On ne regarde que la 1ère ligne non-vide
   }
   return -1;
 }
 
+// Cherche dynamiquement la ligne d'en-tête MARGE en scannant les lignes
+// à partir de l'indice hint (rowM-2) vers le bas, jusqu'à rowM+5.
+// Retourne {hdrIdx, dataIdx} ou null si introuvable.
+function findMargeSection(rows, hintDataIdx, year) {
+  const Y  = String(year);
+  const Y1 = String(year-1);
+  // Scan autour du hint (± 8 lignes)
+  const start = Math.max(0, hintDataIdx - 4);
+  const end   = Math.min(rows.length-1, hintDataIdx + 8);
+  for (let i=start; i<=end; i++) {
+    const r = rows[i] || [];
+    const h0 = hdr(r[0]||'').toLowerCase();
+    // La ligne d'en-tête contient "marge" en col A ET une année dans une autre col
+    if (h0==='marge' || h0==='marge brute') {
+      // Vérifier qu'une colonne contient l'année N ou N-1
+      const colM  = findCol(r, year);
+      const colM1 = findCol(r, year-1);
+      if (colM>=0 || colM1>=0) {
+        return { hdrIdx: i, dataIdx: i+1 };
+      }
+    }
+  }
+  // Plan B : chercher n'importe où dans le sheet
+  for (let i=0; i<rows.length; i++) {
+    const r = rows[i] || [];
+    const h0 = hdr(r[0]||'').toLowerCase();
+    if ((h0==='marge'||h0==='marge brute') && (findCol(r,year)>=0||findCol(r,year-1)>=0)) {
+      return { hdrIdx: i, dataIdx: i+1 };
+    }
+  }
+  return null;
+}
+
 // ─── PARSE UN ONGLET ─────────────────────────────────────
 //
-// Structure constatée sur les captures :
-//
-// SECTION CA  (commence à la ligne 1 du sheet = index 0 CSV) :
-//   idx 0  : en-têtes  →  CA | 2023 | 2024 | 2025 | 2026 | % évol | dif | □
-//   idx 1  : Janvier   (= rowCA - 1  en 0-based)
-//   …
-//   idx 12 : Décembre
-//
-// SECTION MARGE (en-tête à rowM-2, données à rowM-1 en 0-based) :
-//   idx 20 : en-têtes  →  MARGE | 2025 | 2026 | % évol | dif | □
-//   idx 21 : Janvier   (= rowM - 1  en 0-based)
-//   …
-//   idx 32 : Décembre
-//
-// Pour CHAQUE section on recherche dynamiquement la colonne de l'année
-// dans la ligne d'en-tête de CETTE section — car elles sont différentes.
+// Leçons du debug :
+// 1. L'en-tête CA (idx 0) a des colonnes vides pour % évol → chercher l'évol dans les DONNÉES
+// 2. L'en-tête Marge n'est pas forcément à rowM-2 (lignes vides variables) → scan dynamique
+// 3. L'onglet 2025 n'a pas de marge → rowM ignoré si section absente
+// 4. L'onglet 2027 peut avoir des cellules "0 €" pour les mois futurs → traiter 0 comme null
 
 function parseTab(rows, year) {
   const Y  = year;
-  const Y1 = year - 1;   // N-1 pour comparaison
+  const Y1 = year - 1;
 
   // ── CA ──
-  const caHdrIdx  = 0;              // en-tête CA = toujours ligne 1 (idx 0)
-  const caDataIdx = CFG.rowCA - 1;  // Janvier = rowCA - 1 (0-based)
+  const caHdrIdx  = 0;
+  const caDataIdx = CFG.rowCA - 1;
   const caHdr     = rows[caHdrIdx] || [];
 
-  const colCA   = findCol(caHdr, Y);
-  const colCA1  = findCol(caHdr, Y1);
-  const colECA  = findEvolCol(caHdr, colCA >= 0 ? colCA : 0);
+  const colCA  = findCol(caHdr, Y);
+  const colCA1 = findCol(caHdr, Y1);
+  // Cherche % évol dans les données (l'en-tête est souvent vide)
+  const colECA = findEvolColInData(rows, caDataIdx, Math.max(colCA, colCA1, 0));
 
   dbgLines.push(`[${Y}] CA header (idx ${caHdrIdx}): ${JSON.stringify(caHdr.slice(0,9))}`);
   dbgLines.push(`       colCA=${colCA}  colCA-1=${colCA1}  colEvol=${colECA}  dataStart=${caDataIdx}`);
@@ -297,32 +337,42 @@ function parseTab(rows, year) {
   const ca=[], ca1=[], eca=[];
   for (let m=0;m<12;m++){
     const row = rows[caDataIdx+m] || [];
-    ca.push(  colCA >=0 ? toNum(row[colCA])  : null);
-    ca1.push( colCA1>=0 ? toNum(row[colCA1]) : null);
+    const vCA  = colCA >=0 ? toNum(row[colCA])  : null;
+    const vCA1 = colCA1>=0 ? toNum(row[colCA1]) : null;
+    ca.push(  vCA  && vCA  > 0 ? vCA  : null);   // 0 € = pas de données
+    ca1.push( vCA1 && vCA1 > 0 ? vCA1 : null);
     eca.push( colECA>=0 ? toPct(row[colECA]) : null);
-    if(m<3) dbgLines.push(`       Mois ${m+1}: row=${JSON.stringify(row.slice(0,8))}  →  CA=${ca[m]}  CA-1=${ca1[m]}  evol=${eca[m]}`);
+    if(m<3) dbgLines.push(`       Mois ${m+1}: CA=${ca[m]}  CA-1=${ca1[m]}  evol=${eca[m]}  raw=${JSON.stringify(row.slice(0,7))}`);
   }
 
   // ── MARGE ──
   const mg=[], mg1=[], emg=[];
   if (CFG.rowM > 0) {
-    const mHdrIdx  = CFG.rowM - 2;   // en-tête Marge = 1 ligne au-dessus des données (0-based)
-    const mDataIdx = CFG.rowM - 1;   // données Marge (0-based)
-    const mHdr     = rows[mHdrIdx] || [];
+    const hintDataIdx = CFG.rowM - 1;   // hint 0-based
+    const sec = findMargeSection(rows, hintDataIdx, Y);
 
-    const colM  = findCol(mHdr, Y);
-    const colM1 = findCol(mHdr, Y1);
-    const colEM = findEvolCol(mHdr, colM >= 0 ? colM : 0);
+    dbgLines.push(`[${Y}] Marge section search: hint=${hintDataIdx} → ${sec ? 'hdr='+sec.hdrIdx+' data='+sec.dataIdx : 'NON TROUVÉ'}`);
 
-    dbgLines.push(`[${Y}] Marge header (idx ${mHdrIdx}): ${JSON.stringify(mHdr.slice(0,8))}`);
-    dbgLines.push(`       colM=${colM}  colM-1=${colM1}  colEvol=${colEM}  dataStart=${mDataIdx}`);
+    if (sec) {
+      const mHdr  = rows[sec.hdrIdx] || [];
+      const colM  = findCol(mHdr, Y);
+      const colM1 = findCol(mHdr, Y1);
+      const colEM = findEvolColInData(rows, sec.dataIdx, Math.max(colM, colM1, 0));
 
-    for (let m=0;m<12;m++){
-      const row = rows[mDataIdx+m] || [];
-      mg.push(  colM >=0 ? toNum(row[colM])  : null);
-      mg1.push( colM1>=0 ? toNum(row[colM1]) : null);
-      emg.push( colEM>=0 ? toPct(row[colEM]) : null);
-      if(m<3) dbgLines.push(`       Mois ${m+1}: row=${JSON.stringify(row.slice(0,7))}  →  M=${mg[m]}  M-1=${mg1[m]}  evol=${emg[m]}`);
+      dbgLines.push(`       Marge header: ${JSON.stringify(mHdr.slice(0,8))}`);
+      dbgLines.push(`       colM=${colM}  colM-1=${colM1}  colEvol=${colEM}`);
+
+      for (let m=0;m<12;m++){
+        const row = rows[sec.dataIdx+m] || [];
+        const vM  = colM >=0 ? toNum(row[colM])  : null;
+        const vM1 = colM1>=0 ? toNum(row[colM1]) : null;
+        mg.push(  vM  && vM  > 0 ? vM  : null);
+        mg1.push( vM1 && vM1 > 0 ? vM1 : null);
+        emg.push( colEM>=0 ? toPct(row[colEM]) : null);
+        if(m<3) dbgLines.push(`       Mois ${m+1}: M=${mg[m]}  M-1=${mg1[m]}  evol=${emg[m]}  raw=${JSON.stringify(row.slice(0,6))}`);
+      }
+    } else {
+      dbgLines.push(`       → Section Marge absente pour ${Y} (normal pour 2025)`);
     }
   }
 
@@ -513,7 +563,7 @@ function render(){
 // ─── UTILITAIRES ──────────────────────────────────────────
 function s(a){return (a||[]).reduce((t,v)=>t+(v||0),0);}
 function last(a){if(!a)return null;const v=[...a].reverse().find(v=>v!==null&&v!==undefined);return v!==undefined?v:null;}
-function fe(v){if(v===null||v===undefined||v===0&&true)return v===0?'0 €':'—';return v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';}
+function fe(v){if(!v||v<=0)return '—';return v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';}
 function fk(v){if(!v)return '—';return v>=1e3?(v/1e3).toFixed(1).replace('.',',')+' k€':fe(v);}
 function f1(v){return v.toFixed(1).replace('.',',');}
 function fev(v){if(v===null||v===undefined)return '—';return (v>=0?'+':'')+v.toFixed(2).replace('.',',')+' %';}
