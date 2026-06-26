@@ -13,237 +13,211 @@
     --surface2:  #233328;
     --border:    #2E4438;
     --green:     #00C9A7;
-    --green-dim: #00C9A720;
+    --green-dim: rgba(0,201,167,.15);
     --red:       #E05252;
-    --red-dim:   #E0525220;
+    --red-dim:   rgba(224,82,82,.15);
     --gold:      #D4A843;
-    --gold-dim:  #D4A84320;
-    --blue:      #5B9BD5;
-    --blue-dim:  #5B9BD520;
     --text:      #F0F5F2;
-    --text-muted:#8AA89A;
-    --radius:    10px;
+    --muted:     #8AA89A;
+    --r:         10px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; min-height: 100vh; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh}
 
   /* HEADER */
-  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .header-brand h1 { font-family: 'Playfair Display', serif; font-size: 1.45rem; color: var(--text); letter-spacing: .02em; }
-  .header-brand p { font-size: 11px; color: var(--text-muted); margin-top: 2px; letter-spacing: .06em; text-transform: uppercase; }
-  .header-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .brand h1{font-family:'Playfair Display',serif;font-size:1.4rem;letter-spacing:.02em}
+  .brand p{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+  .hright{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .sync{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .cfg-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:7px 13px;font-size:12px;cursor:pointer;transition:all .15s}
+  .cfg-btn:hover{border-color:var(--green);color:var(--green)}
 
   /* YEAR TABS */
-  .year-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 4px; overflow-x: auto; }
-  .year-tab { padding: 12px 20px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color .18s, border-color .18s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; letter-spacing: .04em; }
-  .year-tab:hover { color: var(--text); }
-  .year-tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:2px;overflow-x:auto}
+  .tab{padding:11px 20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;transition:all .15s;white-space:nowrap;letter-spacing:.04em}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--green);border-bottom-color:var(--green)}
 
   /* MAIN */
-  main { padding: 28px; max-width: 1400px; margin: 0 auto; }
+  main{padding:24px 28px;max-width:1400px;margin:0 auto}
 
   /* KPI */
-  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 28px; }
-  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; position: relative; overflow: hidden; }
-  .kpi-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--green); border-radius: 3px 0 0 3px; }
-  .kpi-card.kpi-marge::before { background: var(--gold); }
-  .kpi-card.kpi-neg::before { background: var(--red); }
-  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: 6px; }
-  .kpi-value { font-size: 1.65rem; font-weight: 700; color: var(--text); line-height: 1; }
-  .kpi-sub { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
-  .kpi-evol { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 7px; border-radius: 20px; margin-top: 6px; }
-  .kpi-evol.pos { background: var(--green-dim); color: var(--green); }
-  .kpi-evol.neg { background: var(--red-dim); color: var(--red); }
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin-bottom:24px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}
+  .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--green)}
+  .kpi.gold::before{background:var(--gold)}
+  .kpi.red::before{background:var(--red)}
+  .kpi-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px}
+  .kpi-val{font-size:1.6rem;font-weight:700;line-height:1}
+  .kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:6px}
+  .badge.pos{background:var(--green-dim);color:var(--green)}
+  .badge.neg{background:var(--red-dim);color:var(--red)}
 
   /* SECTION TITLE */
-  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); margin-bottom: 14px; padding-left: 4px; display: flex; align-items: center; gap: 10px; }
-  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .stitle{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  .stitle::after{content:'';flex:1;height:1px;background:var(--border)}
 
   /* CHART */
-  .chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 28px; }
-  .chart-legend { display: flex; gap: 18px; margin-bottom: 18px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-muted); }
-  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
-  .bar-chart { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; align-items: end; height: 180px; }
-  .bar-col { display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; justify-content: flex-end; }
-  .bar-group { width: 100%; display: flex; gap: 2px; justify-content: center; align-items: flex-end; }
-  .bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 2px; transform-origin: bottom; animation: growUp .55s cubic-bezier(.22,.68,0,1.2) both; cursor: pointer; transition: opacity .15s; }
-  .bar:hover { opacity: .75; }
-  .bar.ca-n    { background: var(--green); }
-  .bar.ca-n1   { background: #3A5C4A; }
-  .bar.marge-n { background: var(--gold); }
-  .bar.marge-n1{ background: #6B5420; }
-  @keyframes growUp { from { transform: scaleY(0); opacity:0; } to { transform: scaleY(1); opacity:1; } }
-  .bar-label { font-size: 9px; color: var(--text-muted); text-align: center; margin-top: 4px; white-space: nowrap; }
+  .chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:24px}
+  .legend{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .leg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+  .leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+  .chart{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:160px}
+  .bcol{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
+  .bgrp{width:100%;display:flex;gap:2px;justify-content:center;align-items:flex-end}
+  .b{flex:1;border-radius:3px 3px 0 0;min-height:2px;transform-origin:bottom;animation:grow .5s cubic-bezier(.22,.68,0,1.2) both;cursor:pointer;transition:opacity .15s;position:relative}
+  .b:hover{opacity:.7}
+  @keyframes grow{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+  .blbl{font-size:9px;color:var(--muted);margin-top:3px;white-space:nowrap}
 
   /* TABLE */
-  .table-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 28px; }
-  table { width: 100%; border-collapse: collapse; }
-  thead th { background: var(--surface2); padding: 10px 14px; text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); font-weight: 600; }
-  thead th:first-child { text-align: left; }
-  tbody tr { border-top: 1px solid var(--border); transition: background .12s; }
-  tbody tr:hover { background: var(--surface2); }
-  tbody tr.total-row { background: var(--surface2); border-top: 2px solid var(--border); font-weight: 700; }
-  td { padding: 9px 14px; text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
-  td:first-child { text-align: left; color: var(--text-muted); font-size: 12px; }
-  .td-n1 { color: var(--text-muted); font-size: 12px; }
-  .evol-cell { font-size: 11px; font-weight: 600; }
-  .evol-pos { color: var(--green); }
-  .evol-neg { color: var(--red); }
-  .evol-na  { color: var(--text-muted); }
+  .tpanel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:24px}
+  table{width:100%;border-collapse:collapse}
+  thead th{background:var(--surface2);padding:9px 13px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+  thead th:first-child{text-align:left}
+  tbody tr{border-top:1px solid var(--border);transition:background .1s}
+  tbody tr:hover{background:var(--surface2)}
+  tr.tot{background:var(--surface2)!important;border-top:2px solid var(--border);font-weight:700}
+  td{padding:9px 13px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+  td:first-child{text-align:left;color:var(--muted);font-size:12px}
+  .n1{color:var(--muted);font-size:12px}
+  .ep{color:var(--green);font-size:11px;font-weight:600}
+  .en{color:var(--red);font-size:11px;font-weight:600}
+  .ea{color:var(--muted);font-size:11px}
 
-  /* LOADING / ERROR */
-  #loading { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 13px; }
-  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #error-msg { display:none; background: var(--red-dim); border: 1px solid var(--red); border-radius: var(--radius); padding: 18px 22px; color: var(--red); margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
-
-  /* CONFIG */
-  .config-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px; padding: 7px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color .15s, color .15s; }
-  .config-btn:hover { border-color: var(--green); color: var(--green); }
-  .modal-overlay { display: none; position: fixed; inset: 0; background: #00000080; z-index: 100; align-items: center; justify-content: center; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; width: min(560px, 94vw); max-height: 90vh; overflow-y: auto; }
-  .modal h2 { font-size: 1rem; margin-bottom: 18px; color: var(--text); }
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 5px; }
-  .form-group input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 9px 12px; font-size: 13px; font-family: 'Inter', monospace; outline: none; transition: border-color .15s; }
-  .form-group input:focus { border-color: var(--green); }
-  .form-hint { font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 22px; justify-content: flex-end; }
-  .btn-primary { background: var(--green); color: #0D1F17; border: none; border-radius: 6px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
-  .btn-primary:hover { opacity:.85; }
-  .btn-cancel { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px; padding: 9px 16px; font-size: 13px; cursor: pointer; }
-  .btn-cancel:hover { color: var(--text); }
-  .no-data { padding: 40px; text-align: center; color: var(--text-muted); font-size: 13px; }
-
-  /* TOOLTIP */
-  .tooltip { position: fixed; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 12px; pointer-events: none; z-index: 200; display: none; white-space: nowrap; color: var(--text); box-shadow: 0 4px 16px #00000040; }
+  /* LOADING */
+  #loading{text-align:center;padding:80px 20px;color:var(--muted)}
+  .spin{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #errmsg{display:none;background:var(--red-dim);border:1px solid var(--red);border-radius:var(--r);padding:16px 20px;color:var(--red);margin-bottom:18px;font-size:13px;line-height:1.6}
 
   /* DEBUG */
-  .debug-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; font-size: 11px; color: var(--text-muted); display: none; }
-  .debug-panel.show { display: block; }
-  .debug-panel pre { white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+  #dbg{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:18px;font-size:11px;color:var(--muted);line-height:1.7}
+  #dbg pre{white-space:pre-wrap;word-break:break-all}
 
-  @media (max-width: 640px) {
-    main { padding: 14px; }
-    header { padding: 14px 16px; }
-    .year-nav { padding: 0 16px; }
-    .bar-chart { height: 110px; }
-    .kpi-value { font-size: 1.25rem; }
-    .bar-label { font-size: 8px; }
-    td, thead th { padding: 7px 8px; font-size: 11px; }
+  /* MODAL */
+  .overlay{display:none;position:fixed;inset:0;background:#0009;z-index:100;align-items:center;justify-content:center}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:26px;width:min(540px,94vw);max-height:90vh;overflow-y:auto}
+  .modal h2{font-size:.95rem;margin-bottom:16px}
+  .fg{margin-bottom:13px}
+  .fg label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+  .fg input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 11px;font-size:13px;font-family:monospace;outline:none;transition:border-color .15s}
+  .fg input:focus{border-color:var(--green)}
+  .fg .hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .mact{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+  .btn-ok{background:var(--green);color:#0D1F17;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-ok:hover{opacity:.85}
+  .btn-cl{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:9px 14px;font-size:13px;cursor:pointer}
+
+  /* TOOLTIP */
+  #tip{position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 11px;font-size:12px;pointer-events:none;z-index:200;display:none;white-space:nowrap;box-shadow:0 4px 16px #0005}
+
+  @media(max-width:640px){
+    main{padding:14px 16px}
+    header{padding:13px 16px}
+    .tabs{padding:0 16px}
+    .chart{height:100px}
+    .kpi-val{font-size:1.2rem}
+    .blbl{font-size:8px}
+    td,thead th{padding:7px 8px;font-size:11px}
   }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-brand">
+  <div class="brand">
     <h1>Pharmacie de Glageon</h1>
-    <p>Tableau de bord — Chiffre d'affaire &amp; Marges</p>
+    <p>Tableau de bord — CA &amp; Marges</p>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <div class="header-status" id="syncStatus">
-      <div class="status-dot"></div>
-      <span>Synchronisation…</span>
-    </div>
-    <button class="config-btn" onclick="openConfig()">⚙️ Configuration</button>
+  <div class="hright">
+    <div class="sync" id="sync"><div class="dot"></div><span>Chargement…</span></div>
+    <button class="cfg-btn" onclick="openCfg()">⚙️ Configuration</button>
+    <button class="cfg-btn" onclick="toggleDbg()" style="font-size:11px">🔍 Debug</button>
   </div>
 </header>
 
-<nav class="year-nav" id="yearNav"></nav>
+<nav class="tabs" id="tabs"></nav>
 
 <main>
-  <div id="error-msg"></div>
-  <div id="loading"><div class="spinner"></div>Chargement des données Google Sheets…</div>
-  <div id="debug-panel" class="debug-panel"></div>
-  <div id="dashboard" style="display:none"></div>
+  <div id="errmsg"></div>
+  <div id="dbg"><pre id="dbgpre"></pre></div>
+  <div id="loading"><div class="spin"></div>Chargement…</div>
+  <div id="dash" style="display:none"></div>
 </main>
 
-<div class="modal-overlay" id="configModal">
+<div class="overlay" id="cfgModal">
   <div class="modal">
-    <h2>⚙️ Configuration du tableau de bord</h2>
-    <div class="form-group">
+    <h2>⚙️ Configuration</h2>
+    <div class="fg">
       <label>ID du Google Sheets</label>
-      <input type="text" id="cfgSheetId" placeholder="1psJ2ydW57fgf3HalIl-lKLX5K7W3ilyxWS3D5hom0QY">
-      <div class="form-hint">L'identifiant dans l'URL : docs.google.com/spreadsheets/d/<strong>[ID]</strong>/edit</div>
+      <input id="cId" placeholder="1psJ2ydW57fgf3HalIl-...">
+      <div class="hint">docs.google.com/spreadsheets/d/<strong>[ID]</strong>/edit</div>
     </div>
-    <div class="form-group">
-      <label>Onglets à charger (séparés par des virgules, du plus ancien au plus récent)</label>
-      <input type="text" id="cfgTabs" placeholder="2025,2026,2027">
+    <div class="fg">
+      <label>Onglets (du plus ancien au plus récent)</label>
+      <input id="cTabs" placeholder="2025,2026,2027">
     </div>
-    <div class="form-group">
-      <label>Ligne de départ CA (ligne Sheets où se trouve Janvier)</label>
-      <input type="text" id="cfgRowCA" placeholder="2">
+    <div class="fg">
+      <label>Ligne Sheets où commence Janvier (CA)</label>
+      <input id="cRowCA" placeholder="2">
+      <div class="hint">Ex : 2 si Janvier est en ligne 2 du sheet</div>
     </div>
-    <div class="form-group">
-      <label>Ligne de départ Marge (0 = pas de marge dans ce sheet)</label>
-      <input type="text" id="cfgRowMarge" placeholder="22">
-      <div class="form-hint">D'après votre sheet : CA commence ligne 2, Marge commence ligne 22.</div>
+    <div class="fg">
+      <label>Ligne Sheets où commence Janvier (Marge) — 0 si pas de marge</label>
+      <input id="cRowM" placeholder="22">
+      <div class="hint">Ex : 22 (la ligne juste au-dessus contient les en-têtes Marge)</div>
     </div>
-    <p style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.6;">
-      ⚠️ Le Google Sheets doit être partagé : Fichier → Partager → Tout le monde avec le lien → Lecteur.
+    <p style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6">
+      ⚠️ Le sheet doit être partagé : Fichier → Partager → Tout le monde avec le lien → Lecteur.
     </p>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeConfig()">Annuler</button>
-      <button class="btn-primary" onclick="saveConfig()">Enregistrer et recharger</button>
+    <div class="mact">
+      <button class="btn-cl" onclick="closeCfg()">Annuler</button>
+      <button class="btn-ok" onclick="saveCfg()">Enregistrer &amp; recharger</button>
     </div>
   </div>
 </div>
-
-<div class="tooltip" id="tooltip"></div>
+<div id="tip"></div>
 
 <script>
-// ══════════════════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════════════════
-const DEFAULT_CONFIG = {
-  sheetId:  '1psJ2ydW57fgf3HalIl-lKLX5K7W3ilyxWS3D5hom0QY',
-  tabs:     ['2025','2026','2027'],
-  rowCA:    2,
-  rowMarge: 22,
+// ─── CONFIG ────────────────────────────────────────────────
+const DEF = {
+  sheetId: '1psJ2ydW57fgf3HalIl-lKLX5K7W3ilyxWS3D5hom0QY',
+  tabs:    ['2025','2026','2027'],
+  rowCA:   2,   // ligne Sheets (1-based) de Janvier pour le CA
+  rowM:    22,  // ligne Sheets (1-based) de Janvier pour la Marge (0 = absent)
 };
-function loadConfig() {
-  try { const s = localStorage.getItem('pharma_cfg2'); return s ? {...DEFAULT_CONFIG,...JSON.parse(s)} : {...DEFAULT_CONFIG}; }
-  catch { return {...DEFAULT_CONFIG}; }
-}
-let CFG = loadConfig();
+let CFG = (() => { try { const s=localStorage.getItem('ph3'); return s?{...DEF,...JSON.parse(s)}:{...DEF}; } catch{return {...DEF};} })();
 
-// ══════════════════════════════════════════════════════════
-// CONSTANTES
-// ══════════════════════════════════════════════════════════
-const MOIS       = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const MOIS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+// ─── CONSTANTES ────────────────────────────────────────────
+const MOIS  = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
-let DATA      = {};  // DATA[annee] = { ca[], marge[], caAnnees{}, margeAnnees{} }
-let activeYear = null;
-let debugLines = [];
+let DATA={}, activeYear=null, dbgLines=[];
 
-function dbg(s) { debugLines.push(s); }
-
-// ══════════════════════════════════════════════════════════
-// CSV FETCH & PARSE
-// ══════════════════════════════════════════════════════════
-async function fetchSheet(sheetId, sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} pour l'onglet "${sheetName}"`);
-  return parseCSV(await resp.text());
+// ─── CSV ──────────────────────────────────────────────────
+async function fetchCSV(sheetId, tab) {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status} — onglet "${tab}"`);
+  return csvParse(await r.text());
 }
 
-function parseCSV(text) {
-  const rows = [];
-  for (const line of text.split('\n')) {
+function csvParse(txt) {
+  const rows=[];
+  for (const line of txt.split('\n')) {
     if (!line.trim()) continue;
-    const cells = []; let inQ = false, cur = '';
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') inQ = !inQ;
-      else if (c === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
-      else cur += c;
+    const cells=[]; let q=false, cur='';
+    for (let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){q=!q;}
+      else if(c===','&&!q){cells.push(cur.trim());cur='';}
+      else cur+=c;
     }
     cells.push(cur.trim());
     rows.push(cells);
@@ -251,357 +225,351 @@ function parseCSV(text) {
   return rows;
 }
 
-function parseEuro(str) {
-  if (!str) return null;
-  const clean = str.replace(/[€\u00a0\s"]/g,'').replace(',','.').replace(/\u202f/g,'');
-  const n = parseFloat(clean);
-  return isNaN(n) ? null : n;
+// ─── NETTOYAGE ────────────────────────────────────────────
+function toNum(s) {
+  if (!s) return null;
+  // Supprime : guillemets, espaces (normal + insécable + fin-de-ligne), €, garde chiffres , .  - 
+  const c = s.replace(/"/g,'').replace(/[\u00a0\u202f\u2009\s]/g,'').replace(/\u00e2\u0080\u00af/g,'').replace('€','').replace(',','.');
+  const n = parseFloat(c);
+  return isNaN(n)?null:n;
 }
-function parsePct(str) {
-  if (!str) return null;
-  const clean = str.replace(/[%"\s\u00a0\u202f]/g,'').replace(',','.');
-  const n = parseFloat(clean);
-  return isNaN(n) ? null : n;
+function toPct(s) {
+  if (!s) return null;
+  const c = s.replace(/"/g,'').replace(/[\u00a0\u202f\u2009\s%]/g,'').replace(',','.');
+  const n = parseFloat(c);
+  return isNaN(n)?null:n;
 }
-function cleanHeader(s) {
-  return (s || '').replace(/"/g,'').replace(/\u00a0/g,' ').trim().toLowerCase();
-}
+function hdr(s){ return (s||'').replace(/"/g,'').replace(/[\u00a0\u202f]/g,' ').trim(); }
 
-// ══════════════════════════════════════════════════════════
-// PARSING — logique robuste basée sur la structure réelle
-//
-// ONGLET ex. 2026 :
-//   Ligne 1  (idx 0)  : en-têtes CA  → col A=libellé, B=2023, C=2024, D=2025, E=2026, F=% évol, G=dif
-//   Lignes 2-13 (idx 1-12)  : Janvier→Décembre  (CA)
-//   Ligne 14 (idx 13) : TOTAL
-//   Ligne 21 (idx 20) : en-têtes MARGE → col A=MARGE, B=2025, C=2026, D=% évol, E=dif
-//   Lignes 22-33 (idx 21-32) : Janvier→Décembre (Marge)
-//   Ligne 34 (idx 33) : TOTAL
-//
-// On cherche chaque année dans la ligne d'en-tête de chaque section.
-// ══════════════════════════════════════════════════════════
-
-function findYearCol(headerRow, year) {
-  for (let c = 0; c < headerRow.length; c++) {
-    if (cleanHeader(headerRow[c]) === String(year)) return c;
+// ─── RECHERCHE DE COLONNE ────────────────────────────────
+// Cherche la colonne dont l'en-tête correspond à `year` (string ou number)
+function findCol(row, year) {
+  const target = String(year);
+  for (let c=0;c<row.length;c++){
+    if(hdr(row[c])===target) return c;
   }
   return -1;
 }
-function findEvolCol(headerRow, afterCol) {
-  for (let c = afterCol + 1; c < headerRow.length; c++) {
-    const h = cleanHeader(headerRow[c]);
-    if (h.includes('%') || h.includes('vol')) return c;
+// Cherche la 1ère colonne contenant '%' ou 'vol' après afterCol
+function findEvolCol(row, afterCol) {
+  for (let c=afterCol+1;c<row.length;c++){
+    const h=hdr(row[c]).toLowerCase();
+    if(h.includes('%')||h.includes('vol')) return c;
   }
   return -1;
 }
 
-function parseYearData(rows, year, cfg) {
-  const caStartIdx    = cfg.rowCA - 1;          // index 0-based du premier mois CA
-  const margeStartIdx = cfg.rowMarge > 0 ? cfg.rowMarge - 1 : null;
+// ─── PARSE UN ONGLET ─────────────────────────────────────
+//
+// Structure constatée sur les captures :
+//
+// SECTION CA  (commence à la ligne 1 du sheet = index 0 CSV) :
+//   idx 0  : en-têtes  →  CA | 2023 | 2024 | 2025 | 2026 | % évol | dif | □
+//   idx 1  : Janvier   (= rowCA - 1  en 0-based)
+//   …
+//   idx 12 : Décembre
+//
+// SECTION MARGE (en-tête à rowM-2, données à rowM-1 en 0-based) :
+//   idx 20 : en-têtes  →  MARGE | 2025 | 2026 | % évol | dif | □
+//   idx 21 : Janvier   (= rowM - 1  en 0-based)
+//   …
+//   idx 32 : Décembre
+//
+// Pour CHAQUE section on recherche dynamiquement la colonne de l'année
+// dans la ligne d'en-tête de CETTE section — car elles sont différentes.
 
-  // ── En-tête CA (ligne 0)
-  const caHeader = rows[0] || [];
-  const colCA_N  = findYearCol(caHeader, year);
-  const colCA_N1 = findYearCol(caHeader, year - 1);
-  const colEvolCA = findEvolCol(caHeader, colCA_N);
+function parseTab(rows, year) {
+  const Y  = year;
+  const Y1 = year - 1;   // N-1 pour comparaison
 
-  dbg(`Onglet ${year} — CA header: ${JSON.stringify(caHeader.slice(0,8))}`);
-  dbg(`  colCA_N=${colCA_N}  colCA_N1=${colCA_N1}  colEvolCA=${colEvolCA}`);
+  // ── CA ──
+  const caHdrIdx  = 0;              // en-tête CA = toujours ligne 1 (idx 0)
+  const caDataIdx = CFG.rowCA - 1;  // Janvier = rowCA - 1 (0-based)
+  const caHdr     = rows[caHdrIdx] || [];
 
-  const ca    = [], caN1 = [], evolCA = [];
-  for (let m = 0; m < 12; m++) {
-    const row = rows[caStartIdx + m] || [];
-    ca.push(   colCA_N  >= 0 ? parseEuro(row[colCA_N])  : null);
-    caN1.push( colCA_N1 >= 0 ? parseEuro(row[colCA_N1]) : null);
-    evolCA.push(colEvolCA >= 0 ? parsePct(row[colEvolCA]) : null);
+  const colCA   = findCol(caHdr, Y);
+  const colCA1  = findCol(caHdr, Y1);
+  const colECA  = findEvolCol(caHdr, colCA >= 0 ? colCA : 0);
+
+  dbgLines.push(`[${Y}] CA header (idx ${caHdrIdx}): ${JSON.stringify(caHdr.slice(0,9))}`);
+  dbgLines.push(`       colCA=${colCA}  colCA-1=${colCA1}  colEvol=${colECA}  dataStart=${caDataIdx}`);
+
+  const ca=[], ca1=[], eca=[];
+  for (let m=0;m<12;m++){
+    const row = rows[caDataIdx+m] || [];
+    ca.push(  colCA >=0 ? toNum(row[colCA])  : null);
+    ca1.push( colCA1>=0 ? toNum(row[colCA1]) : null);
+    eca.push( colECA>=0 ? toPct(row[colECA]) : null);
+    if(m<3) dbgLines.push(`       Mois ${m+1}: row=${JSON.stringify(row.slice(0,8))}  →  CA=${ca[m]}  CA-1=${ca1[m]}  evol=${eca[m]}`);
   }
 
-  // ── En-tête Marge (ligne rowMarge-2, soit juste au-dessus des données marge)
-  const marge = [], margeN1 = [], evolMarge = [];
-  if (margeStartIdx !== null) {
-    const margeHeaderIdx = margeStartIdx - 1;  // la ligne au-dessus des données
-    const margeHeader    = rows[margeHeaderIdx] || [];
-    const colMarge_N  = findYearCol(margeHeader, year);
-    const colMarge_N1 = findYearCol(margeHeader, year - 1);
-    const colEvolMarge = findEvolCol(margeHeader, colMarge_N);
+  // ── MARGE ──
+  const mg=[], mg1=[], emg=[];
+  if (CFG.rowM > 0) {
+    const mHdrIdx  = CFG.rowM - 2;   // en-tête Marge = 1 ligne au-dessus des données (0-based)
+    const mDataIdx = CFG.rowM - 1;   // données Marge (0-based)
+    const mHdr     = rows[mHdrIdx] || [];
 
-    dbg(`  Marge header idx=${margeHeaderIdx}: ${JSON.stringify(margeHeader.slice(0,7))}`);
-    dbg(`  colMarge_N=${colMarge_N}  colMarge_N1=${colMarge_N1}  colEvolMarge=${colEvolMarge}`);
+    const colM  = findCol(mHdr, Y);
+    const colM1 = findCol(mHdr, Y1);
+    const colEM = findEvolCol(mHdr, colM >= 0 ? colM : 0);
 
-    for (let m = 0; m < 12; m++) {
-      const row = rows[margeStartIdx + m] || [];
-      marge.push(   colMarge_N  >= 0 ? parseEuro(row[colMarge_N])  : null);
-      margeN1.push( colMarge_N1 >= 0 ? parseEuro(row[colMarge_N1]) : null);
-      evolMarge.push(colEvolMarge >= 0 ? parsePct(row[colEvolMarge]) : null);
+    dbgLines.push(`[${Y}] Marge header (idx ${mHdrIdx}): ${JSON.stringify(mHdr.slice(0,8))}`);
+    dbgLines.push(`       colM=${colM}  colM-1=${colM1}  colEvol=${colEM}  dataStart=${mDataIdx}`);
+
+    for (let m=0;m<12;m++){
+      const row = rows[mDataIdx+m] || [];
+      mg.push(  colM >=0 ? toNum(row[colM])  : null);
+      mg1.push( colM1>=0 ? toNum(row[colM1]) : null);
+      emg.push( colEM>=0 ? toPct(row[colEM]) : null);
+      if(m<3) dbgLines.push(`       Mois ${m+1}: row=${JSON.stringify(row.slice(0,7))}  →  M=${mg[m]}  M-1=${mg1[m]}  evol=${emg[m]}`);
     }
   }
 
-  return { ca, caN1, evolCA, marge, margeN1, evolMarge };
+  return { ca, ca1, eca, mg, mg1, emg };
 }
 
-// ══════════════════════════════════════════════════════════
-// CHARGEMENT
-// ══════════════════════════════════════════════════════════
-async function loadAll() {
-  showLoading(true); clearError(); DATA = {}; debugLines = [];
+// ─── CHARGEMENT ──────────────────────────────────────────
+async function loadAll(){
+  showLoad(true); clearErr(); DATA={}; dbgLines=[];
   try {
-    for (const tab of CFG.tabs) {
-      const rows = await fetchSheet(CFG.sheetId, tab);
-      const year = parseInt(tab, 10);
-      DATA[year] = parseYearData(rows, year, { rowCA: CFG.rowCA, rowMarge: CFG.rowMarge });
+    for (const tab of CFG.tabs){
+      const rows = await fetchCSV(CFG.sheetId, tab);
+      const year = parseInt(tab,10);
+      DATA[year]  = parseTab(rows, year);
     }
     const years = Object.keys(DATA).map(Number).sort();
-    if (!years.length) throw new Error('Aucune donnée chargée.');
-    activeYear = years[years.length - 1];
-    buildYearNav(years);
-    showLoading(false);
-    renderDashboard();
-    setSyncStatus(true);
-  } catch(err) {
-    showLoading(false);
-    showError(err);
-    setSyncStatus(false);
-    showDebug();
+    if(!years.length) throw new Error('Aucune donnée.');
+    activeYear = years[years.length-1];
+    buildTabs(years);
+    showLoad(false);
+    render();
+    setSyncOk();
+  } catch(e){
+    showLoad(false);
+    showErr(e.message);
+    setSyncErr();
+    renderDbg();
   }
 }
 
-// ══════════════════════════════════════════════════════════
-// RENDU
-// ══════════════════════════════════════════════════════════
-function buildYearNav(years) {
-  const nav = document.getElementById('yearNav');
-  nav.innerHTML = '';
-  for (const y of years) {
-    const btn = document.createElement('button');
-    btn.className = 'year-tab' + (y === activeYear ? ' active' : '');
-    btn.textContent = y;
-    btn.onclick = () => {
-      activeYear = y;
-      document.querySelectorAll('.year-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderDashboard();
-    };
-    nav.appendChild(btn);
+// ─── RENDER ──────────────────────────────────────────────
+function buildTabs(years){
+  const el=document.getElementById('tabs'); el.innerHTML='';
+  for(const y of years){
+    const b=document.createElement('button');
+    b.className='tab'+(y===activeYear?' active':'');
+    b.textContent=y;
+    b.onclick=()=>{activeYear=y;document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');render();};
+    el.appendChild(b);
   }
 }
 
-function renderDashboard() {
-  const d  = document.getElementById('dashboard');
-  const yd = DATA[activeYear];
-  if (!yd) { d.innerHTML = '<div class="no-data">Données indisponibles.</div>'; return; }
+function render(){
+  const d=document.getElementById('dash');
+  const yd=DATA[activeYear];
+  if(!yd){d.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Données indisponibles</div>';return;}
 
-  const prevYear  = activeYear - 1;
-  const hasMarge  = yd.marge  && yd.marge.some(v => v !== null);
-  const hasCaN1   = yd.caN1   && yd.caN1.some(v => v !== null);
-  const hasMargeN1= yd.margeN1 && yd.margeN1.some(v => v !== null);
+  const py = activeYear-1;
+  const hasM  = yd.mg  && yd.mg.some(v=>v!==null);
+  const hasM1 = yd.mg1 && yd.mg1.some(v=>v!==null);
+  const hasC1 = yd.ca1 && yd.ca1.some(v=>v!==null);
 
-  const totalCA    = sum(yd.ca);
-  const totalCaN1  = sum(yd.caN1);
-  const totalMarge = sum(yd.marge);
-  const totalMargeN1 = sum(yd.margeN1);
-
-  const lastCA      = lastVal(yd.ca);
-  const lastEvol    = lastVal(yd.evolCA);
-  const lastMarge   = hasMarge ? lastVal(yd.marge)   : null;
-  const lastEvolM   = hasMarge ? lastVal(yd.evolMarge) : null;
-  const nMois       = yd.ca.filter(v=>v!==null).length;
-  const txMarge     = (totalCA && totalMarge) ? totalMarge/totalCA*100 : null;
+  const totCA   = s(yd.ca),  totCA1  = s(yd.ca1);
+  const totMG   = s(yd.mg),  totMG1  = s(yd.mg1);
+  const nMois   = yd.ca.filter(v=>v!==null).length;
+  const txMarge = (totCA&&totMG) ? totMG/totCA*100 : null;
+  const lastCA  = last(yd.ca),  lastECA = last(yd.eca);
+  const lastMG  = last(yd.mg),  lastEMG = last(yd.emg);
 
   // ── KPI
-  let kpi = `<div class="kpi-row">`;
-  kpi += kpiCard('CA TTC — '+activeYear, fmtM(totalCA), `${nMois} mois renseigné${nMois>1?'s':''}`, null, '');
-  if (lastEvol !== null) kpi += kpiCard('Dernier mois CA', fmtK(lastCA), '', lastEvol, '');
-  if (hasMarge) {
-    kpi += kpiCard('Marge brute — '+activeYear, fmtM(totalMarge), txMarge !== null ? 'Taux : '+fmt1(txMarge)+' %' : '', null, 'kpi-marge');
-    if (lastMarge !== null) kpi += kpiCard('Dernier mois Marge', fmtK(lastMarge), '', lastEvolM, 'kpi-marge');
+  let kpi='<div class="kpis">';
+  kpi += mkKpi('CA TTC — '+activeYear, fe(totCA), `${nMois} mois`, null, '');
+  if(hasC1) kpi += mkKpi(`CA ${py} (cumul)`, fe(totCA1), '', totCA1?(totCA-totCA1)/totCA1*100:null, '');
+  if(hasM) {
+    kpi += mkKpi('Marge — '+activeYear, fe(totMG), txMarge?'Taux : '+f1(txMarge)+' %':'', null, 'gold');
+    if(hasM1) kpi += mkKpi(`Marge ${py} (cumul)`, fe(totMG1), '', totMG1?(totMG-totMG1)/totMG1*100:null, 'gold');
   }
+  if(lastCA!==null) kpi += mkKpi('Dernier mois CA', fk(lastCA), '', lastECA, '');
+  if(hasM&&lastMG!==null) kpi += mkKpi('Dernier mois Marge', fk(lastMG), '', lastEMG, 'gold');
   kpi += '</div>';
 
-  // ── GRAPHIQUE
-  const allVals = [...yd.ca, ...(hasMarge?yd.marge:[]), ...(hasCaN1?yd.caN1:[]), ...(hasMargeN1?yd.margeN1:[])].filter(v=>v);
-  const maxVal  = allVals.length ? Math.max(...allVals) : 1;
+  // ── CHART
+  const allv=[...yd.ca,...yd.ca1,...(hasM?yd.mg:[]),...(hasM1?yd.mg1:[])].filter(v=>v!=null&&v>0);
+  const mx = allv.length ? Math.max(...allv) : 1;
+  const h  = v => v>0 ? Math.max(2,Math.round(v/mx*100)) : 0;
 
-  let bars = '';
-  for (let m = 0; m < 12; m++) {
-    const caN  = yd.ca[m],    caP  = yd.caN1[m];
-    const mgN  = hasMarge ? yd.marge[m] : null;
-    const mgP  = hasMargeN1 ? yd.margeN1[m] : null;
-    const delay = m * 0.035;
-    const h = v => v ? Math.max(2, Math.round(v/maxVal*100)) : 0;
-    bars += `<div class="bar-col">
-      <div class="bar-group">
-        ${caP  !== null && caP  !== undefined ? `<div class="bar ca-n1"    style="height:${h(caP)}%;animation-delay:${delay}s"    data-tip="CA ${MOIS[m]} ${prevYear} : ${fmtEuro(caP)}"></div>` : ''}
-        ${caN  !== null && caN  !== undefined ? `<div class="bar ca-n"     style="height:${h(caN)}%;animation-delay:${delay+.01}s" data-tip="CA ${MOIS[m]} ${activeYear} : ${fmtEuro(caN)}"></div>` : ''}
-        ${mgP  !== null && mgP  !== undefined ? `<div class="bar marge-n1" style="height:${h(mgP)}%;animation-delay:${delay+.02}s" data-tip="Marge ${MOIS[m]} ${prevYear} : ${fmtEuro(mgP)}"></div>` : ''}
-        ${mgN  !== null && mgN  !== undefined ? `<div class="bar marge-n"  style="height:${h(mgN)}%;animation-delay:${delay+.03}s" data-tip="Marge ${MOIS[m]} ${activeYear} : ${fmtEuro(mgN)}"></div>` : ''}
+  let bars='';
+  for(let m=0;m<12;m++){
+    const cN=yd.ca[m], cP=yd.ca1[m], mN=hasM?yd.mg[m]:null, mP=hasM1?yd.mg1[m]:null;
+    const d0=m*.035;
+    bars+=`<div class="bcol">
+      <div class="bgrp">
+        ${cP!=null?`<div class="b" style="background:#2A4D38;height:${h(cP)}%;animation-delay:${d0}s" data-t="CA ${MOIS[m]} ${py} : ${fe(cP)}"></div>`:''}
+        ${cN!=null?`<div class="b" style="background:var(--green);height:${h(cN)}%;animation-delay:${d0+.01}s" data-t="CA ${MOIS[m]} ${activeYear} : ${fe(cN)}"></div>`:''}
+        ${mP!=null?`<div class="b" style="background:#5C440F;height:${h(mP)}%;animation-delay:${d0+.02}s" data-t="Marge ${MOIS[m]} ${py} : ${fe(mP)}"></div>`:''}
+        ${mN!=null?`<div class="b" style="background:var(--gold);height:${h(mN)}%;animation-delay:${d0+.03}s" data-t="Marge ${MOIS[m]} ${activeYear} : ${fe(mN)}"></div>`:''}
       </div>
-      <div class="bar-label">${MOIS_SHORT[m]}</div>
+      <div class="blbl">${SHORT[m]}</div>
     </div>`;
   }
 
-  const chart = `
-    <div class="section-title">Évolution mensuelle</div>
-    <div class="chart-panel">
-      <div class="chart-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#3A5C4A"></div>CA ${prevYear}</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>CA ${activeYear}</div>
-        ${hasMarge&&hasMargeN1 ? `<div class="legend-item"><div class="legend-dot" style="background:#6B5420"></div>Marge ${prevYear}</div>` : ''}
-        ${hasMarge ? `<div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Marge ${activeYear}</div>` : ''}
-      </div>
-      <div class="bar-chart">${bars}</div>
+  let legend=`
+    ${hasC1?`<div class="leg"><div class="leg-dot" style="background:#2A4D38"></div>CA ${py}</div>`:''}
+    <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>CA ${activeYear}</div>
+    ${hasM&&hasM1?`<div class="leg"><div class="leg-dot" style="background:#5C440F"></div>Marge ${py}</div>`:''}
+    ${hasM?`<div class="leg"><div class="leg-dot" style="background:var(--gold)"></div>Marge ${activeYear}</div>`:''}`;
+
+  const chart=`
+    <div class="stitle">Évolution mensuelle</div>
+    <div class="chart-wrap">
+      <div class="legend">${legend}</div>
+      <div class="chart">${bars}</div>
     </div>`;
 
   // ── TABLEAU CA
-  let tCA = `
-    <div class="section-title">Détail chiffre d'affaire</div>
-    <div class="table-panel"><table>
+  let tca=`
+    <div class="stitle">Détail chiffre d'affaire</div>
+    <div class="tpanel"><table>
       <thead><tr>
         <th>Mois</th>
-        ${hasCaN1 ? `<th>${prevYear}</th>` : ''}
+        ${hasC1?`<th>${py}</th>`:''}
         <th>${activeYear}</th>
         <th>Évolution</th>
       </tr></thead><tbody>`;
-  for (let m = 0; m < 12; m++) {
-    const ca  = yd.ca[m], p = yd.caN1[m], ev = yd.evolCA[m];
-    tCA += `<tr>
+  for(let m=0;m<12;m++){
+    const cN=yd.ca[m], cP=yd.ca1[m], ev=yd.eca[m];
+    // Si le sheet ne donne pas l'évolution, on la calcule nous-mêmes
+    const evFinal = ev!==null ? ev : (cN!==null&&cP!==null&&cP!==0 ? (cN-cP)/cP*100 : null);
+    tca+=`<tr>
       <td>${MOIS[m]}</td>
-      ${hasCaN1 ? `<td class="td-n1">${p !== null ? fmtEuro(p) : '—'}</td>` : ''}
-      <td>${ca !== null ? fmtEuro(ca) : '—'}</td>
-      <td class="evol-cell ${evolClass(ev)}">${fmtEvol(ev)}</td>
+      ${hasC1?`<td class="n1">${cP!==null?fe(cP):'—'}</td>`:''}
+      <td>${cN!==null?fe(cN):'—'}</td>
+      <td class="${ec(evFinal)}">${fev(evFinal)}</td>
     </tr>`;
   }
-  tCA += `<tr class="total-row">
+  const evolTotCA = totCA&&totCA1 ? (totCA-totCA1)/totCA1*100 : null;
+  tca+=`<tr class="tot">
     <td>TOTAL</td>
-    ${hasCaN1 ? `<td class="td-n1">${totalCaN1 ? fmtEuro(totalCaN1) : '—'}</td>` : ''}
-    <td>${fmtEuro(totalCA)}</td>
-    <td class="evol-cell ${evolClass(totalCaN1?((totalCA-totalCaN1)/totalCaN1*100):null)}">${totalCaN1 ? fmtEvol((totalCA-totalCaN1)/totalCaN1*100) : '—'}</td>
+    ${hasC1?`<td class="n1">${fe(totCA1)}</td>`:''}
+    <td>${fe(totCA)}</td>
+    <td class="${ec(evolTotCA)}">${fev(evolTotCA)}</td>
   </tr></tbody></table></div>`;
 
   // ── TABLEAU MARGE
-  let tMarge = '';
-  if (hasMarge) {
-    tMarge = `
-      <div class="section-title">Détail marge brute</div>
-      <div class="table-panel"><table>
+  let tmg='';
+  if(hasM){
+    tmg=`
+      <div class="stitle">Détail marge brute</div>
+      <div class="tpanel"><table>
         <thead><tr>
           <th>Mois</th>
-          ${hasMargeN1 ? `<th>Marge ${prevYear}</th>` : ''}
+          ${hasM1?`<th>Marge ${py}</th>`:''}
           <th>Marge ${activeYear}</th>
           <th>Taux</th>
           <th>Évolution</th>
         </tr></thead><tbody>`;
-    for (let m = 0; m < 12; m++) {
-      const mg = yd.marge[m], mp = yd.margeN1[m], ca = yd.ca[m], ev = yd.evolMarge[m];
-      const tx = (mg && ca) ? mg/ca*100 : null;
-      tMarge += `<tr>
+    for(let m=0;m<12;m++){
+      const mN=yd.mg[m], mP=yd.mg1[m], caN=yd.ca[m], ev=yd.emg[m];
+      const tx = (mN!==null&&caN!==null&&caN!==0) ? mN/caN*100 : null;
+      const evFinal = ev!==null ? ev : (mN!==null&&mP!==null&&mP!==0 ? (mN-mP)/mP*100 : null);
+      tmg+=`<tr>
         <td>${MOIS[m]}</td>
-        ${hasMargeN1 ? `<td class="td-n1">${mp !== null ? fmtEuro(mp) : '—'}</td>` : ''}
-        <td>${mg !== null ? fmtEuro(mg) : '—'}</td>
-        <td>${tx !== null ? fmt1(tx)+' %' : '—'}</td>
-        <td class="evol-cell ${evolClass(ev)}">${fmtEvol(ev)}</td>
+        ${hasM1?`<td class="n1">${mP!==null?fe(mP):'—'}</td>`:''}
+        <td>${mN!==null?fe(mN):'—'}</td>
+        <td>${tx!==null?f1(tx)+' %':'—'}</td>
+        <td class="${ec(evFinal)}">${fev(evFinal)}</td>
       </tr>`;
     }
-    const txG = (totalCA && totalMarge) ? totalMarge/totalCA*100 : null;
-    const evolTotalM = (totalMargeN1 && totalMarge) ? (totalMarge-totalMargeN1)/totalMargeN1*100 : null;
-    tMarge += `<tr class="total-row">
+    const txG = totCA&&totMG ? totMG/totCA*100 : null;
+    const evolTotMG = totMG&&totMG1 ? (totMG-totMG1)/totMG1*100 : null;
+    tmg+=`<tr class="tot">
       <td>TOTAL</td>
-      ${hasMargeN1 ? `<td class="td-n1">${totalMargeN1 ? fmtEuro(totalMargeN1) : '—'}</td>` : ''}
-      <td>${fmtEuro(totalMarge)}</td>
-      <td>${txG !== null ? fmt1(txG)+' %' : '—'}</td>
-      <td class="evol-cell ${evolClass(evolTotalM)}">${fmtEvol(evolTotalM)}</td>
+      ${hasM1?`<td class="n1">${fe(totMG1)}</td>`:''}
+      <td>${fe(totMG)}</td>
+      <td>${txG!==null?f1(txG)+' %':'—'}</td>
+      <td class="${ec(evolTotMG)}">${fev(evolTotMG)}</td>
     </tr></tbody></table></div>`;
   }
 
-  d.innerHTML = kpi + chart + tCA + tMarge;
-  d.style.display = 'block';
+  d.innerHTML = kpi+chart+tca+tmg;
+  d.style.display='block';
 
-  // Tooltips
-  d.querySelectorAll('.bar[data-tip]').forEach(el => {
-    el.addEventListener('mousemove', e => {
-      const tip = document.getElementById('tooltip');
-      tip.textContent = el.dataset.tip;
-      tip.style.display = 'block';
-      tip.style.left = (e.clientX+12)+'px';
-      tip.style.top  = (e.clientY-32)+'px';
+  // Tooltips barres
+  d.querySelectorAll('.b[data-t]').forEach(el=>{
+    el.addEventListener('mousemove',e=>{
+      const tip=document.getElementById('tip');
+      tip.textContent=el.dataset.t;
+      tip.style.display='block';
+      tip.style.left=(e.clientX+12)+'px';
+      tip.style.top=(e.clientY-34)+'px';
     });
-    el.addEventListener('mouseleave', () => { document.getElementById('tooltip').style.display='none'; });
+    el.addEventListener('mouseleave',()=>{document.getElementById('tip').style.display='none';});
   });
+
+  renderDbg();
 }
 
-// ══════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════
-function sum(arr) { if (!arr) return 0; return arr.reduce((a,b)=>a+(b||0),0); }
-function lastVal(arr) { if (!arr) return null; const v = [...arr].reverse().find(v=>v!==null&&v!==undefined); return v !== undefined ? v : null; }
-function fmtEuro(v) { if (v===null||v===undefined) return '—'; return v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €'; }
-function fmtM(v) { if (!v) return '—'; if (v>=1e6) return (v/1e6).toFixed(2).replace('.',',')+' M€'; if (v>=1e3) return (v/1e3).toFixed(0)+' k€'; return fmtEuro(v); }
-function fmtK(v) { if (!v) return '—'; if (v>=1e3) return (v/1e3).toFixed(1).replace('.',',')+' k€'; return fmtEuro(v); }
-function fmt1(v) { return v.toFixed(1).replace('.',','); }
-function fmtEvol(v) { if (v===null||v===undefined) return '—'; return (v>=0?'+':'')+v.toFixed(2).replace('.',',')+' %'; }
-function evolClass(v) { if (v===null||v===undefined) return 'evol-na'; return v>=0?'evol-pos':'evol-neg'; }
+// ─── UTILITAIRES ──────────────────────────────────────────
+function s(a){return (a||[]).reduce((t,v)=>t+(v||0),0);}
+function last(a){if(!a)return null;const v=[...a].reverse().find(v=>v!==null&&v!==undefined);return v!==undefined?v:null;}
+function fe(v){if(v===null||v===undefined||v===0&&true)return v===0?'0 €':'—';return v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';}
+function fk(v){if(!v)return '—';return v>=1e3?(v/1e3).toFixed(1).replace('.',',')+' k€':fe(v);}
+function f1(v){return v.toFixed(1).replace('.',',');}
+function fev(v){if(v===null||v===undefined)return '—';return (v>=0?'+':'')+v.toFixed(2).replace('.',',')+' %';}
+function ec(v){if(v===null||v===undefined)return 'ea';return v>=0?'ep':'en';}
 
-function kpiCard(label, value, sub, evol, cls) {
-  const neg = evol !== null && evol < 0;
-  return `<div class="kpi-card ${cls} ${neg?'kpi-neg':''}">
-    <div class="kpi-label">${label}</div>
-    <div class="kpi-value">${value}</div>
-    ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}
-    ${evol!==null ? `<span class="kpi-evol ${evol>=0?'pos':'neg'}">${fmtEvol(evol)}</span>` : ''}
+function mkKpi(lbl,val,sub,evol,cls){
+  const neg=evol!==null&&evol<0;
+  return `<div class="kpi ${cls} ${neg?'red':''}">
+    <div class="kpi-lbl">${lbl}</div>
+    <div class="kpi-val">${val}</div>
+    ${sub?`<div class="kpi-sub">${sub}</div>`:''}
+    ${evol!==null?`<span class="badge ${evol>=0?'pos':'neg'}">${fev(evol)}</span>`:''}
   </div>`;
 }
 
-// ══════════════════════════════════════════════════════════
-// UI
-// ══════════════════════════════════════════════════════════
-function showLoading(on) {
-  document.getElementById('loading').style.display   = on ? '' : 'none';
-  document.getElementById('dashboard').style.display = on ? 'none' : '';
+// ─── UI ──────────────────────────────────────────────────
+function showLoad(on){
+  document.getElementById('loading').style.display=on?'':'none';
+  document.getElementById('dash').style.display=on?'none':'';
 }
-function showError(err) {
-  const el = document.getElementById('error-msg');
-  el.style.display = '';
-  el.innerHTML = `<strong>❌ Impossible de charger les données</strong><br>${err.message}<br><br>
-    Vérifiez que le Google Sheets est partagé en lecture publique, puis ouvrez ⚙️ Configuration.`;
+function showErr(msg){
+  const el=document.getElementById('errmsg');
+  el.style.display='';
+  el.innerHTML=`<strong>❌ Erreur de chargement</strong><br>${msg}<br><br>
+    Vérifiez le partage public du Sheet et la configuration (⚙️).`;
 }
-function clearError() { const el=document.getElementById('error-msg'); el.style.display='none'; el.innerHTML=''; }
-function setSyncStatus(ok) {
-  const el=document.getElementById('syncStatus'), dot=el.querySelector('.status-dot'), txt=el.querySelector('span');
-  dot.style.background = ok ? 'var(--green)' : 'var(--red)';
-  txt.textContent = ok ? 'Données chargées — '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : 'Erreur de chargement';
-}
-function showDebug() {
-  const el = document.getElementById('debug-panel');
-  el.classList.add('show');
-  el.innerHTML = '<strong>🔍 Debug parsing</strong><br><pre>'+debugLines.join('\n')+'</pre>';
-}
+function clearErr(){const el=document.getElementById('errmsg');el.style.display='none';el.innerHTML='';}
+function setSyncOk(){const el=document.getElementById('sync');el.querySelector('.dot').style.background='var(--green)';el.querySelector('span').textContent='Chargé — '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function setSyncErr(){const el=document.getElementById('sync');el.querySelector('.dot').style.background='var(--red)';el.querySelector('span').textContent='Erreur';}
+function renderDbg(){const el=document.getElementById('dbgpre');if(el)el.textContent=dbgLines.join('\n');}
+let dbgVis=false;
+function toggleDbg(){dbgVis=!dbgVis;document.getElementById('dbg').style.display=dbgVis?'block':'none';}
 
-// ══════════════════════════════════════════════════════════
-// CONFIG MODAL
-// ══════════════════════════════════════════════════════════
-function openConfig() {
-  document.getElementById('cfgSheetId').value  = CFG.sheetId;
-  document.getElementById('cfgTabs').value     = CFG.tabs.join(',');
-  document.getElementById('cfgRowCA').value    = CFG.rowCA;
-  document.getElementById('cfgRowMarge').value = CFG.rowMarge;
-  document.getElementById('configModal').classList.add('open');
+// ─── CONFIG ──────────────────────────────────────────────
+function openCfg(){
+  document.getElementById('cId').value=CFG.sheetId;
+  document.getElementById('cTabs').value=CFG.tabs.join(',');
+  document.getElementById('cRowCA').value=CFG.rowCA;
+  document.getElementById('cRowM').value=CFG.rowM;
+  document.getElementById('cfgModal').classList.add('open');
 }
-function closeConfig() { document.getElementById('configModal').classList.remove('open'); }
-function saveConfig() {
-  const sheetId  = document.getElementById('cfgSheetId').value.trim();
-  const tabsRaw  = document.getElementById('cfgTabs').value.trim();
-  const rowCA    = parseInt(document.getElementById('cfgRowCA').value.trim(),10)||2;
-  const rowMarge = parseInt(document.getElementById('cfgRowMarge').value.trim(),10)||0;
-  if (!sheetId||!tabsRaw) return alert('Champs obligatoires manquants.');
-  CFG = { sheetId, tabs: tabsRaw.split(',').map(s=>s.trim()).filter(Boolean), rowCA, rowMarge };
-  localStorage.setItem('pharma_cfg2', JSON.stringify(CFG));
-  closeConfig();
+function closeCfg(){document.getElementById('cfgModal').classList.remove('open');}
+function saveCfg(){
+  const id=document.getElementById('cId').value.trim();
+  const tabs=document.getElementById('cTabs').value.trim();
+  const rCA=parseInt(document.getElementById('cRowCA').value,10)||2;
+  const rM=parseInt(document.getElementById('cRowM').value,10)||0;
+  if(!id||!tabs)return alert('Champs obligatoires.');
+  CFG={sheetId:id,tabs:tabs.split(',').map(t=>t.trim()).filter(Boolean),rowCA:rCA,rowM:rM};
+  localStorage.setItem('ph3',JSON.stringify(CFG));
+  closeCfg();
   loadAll();
 }
-document.getElementById('configModal').addEventListener('click', e => { if (e.target===e.currentTarget) closeConfig(); });
+document.getElementById('cfgModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCfg();});
 
-// ══════════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════════
+// ─── INIT ────────────────────────────────────────────────
 loadAll();
 </script>
 </body>
