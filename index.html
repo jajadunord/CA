@@ -627,86 +627,88 @@ function parsePct(str) {
 }
 
 // ══════════════════════════════════════════════════════════
-// PARSING — VERSION CORRIGÉE
+// PARSING DU SHEET
+//
+// Structure d'après les captures :
+// Onglet 2026 (avec marges) :
+//   Ligne 1     : entêtes  (A=CA, B=2023, C=2024, D=2025, E=2026, F=% évol, G=dif, H=case)
+//   Lignes 2-13 : Janvier à Décembre  → CA
+//   Ligne 14    : TOTAL
+//   Ligne 21    : MARGE entête
+//   Lignes 22-33: Janvier à Décembre  → Marge
+//   Ligne 34    : TOTAL
+//
+// Onglet 2025 (sans marges, d'après description) :
+//   Même structure sans la partie marge
+//
+// On lit depuis la CSV (0-indexed, donc row 0 = ligne 1)
 // ══════════════════════════════════════════════════════════
- 
-/**
- * Cherche dans un ensemble de lignes candidates celle qui contient
- * l'en-tête de l'année, et retourne {colYear, colEvol}.
- * Candidate rows : de startIdx-3 à startIdx (inclusive).
- */
-function findYearColumn(rows, startIdx, year) {
-  const yearStr = String(year);
-  let colYear = -1, colEvol = -1;
- 
-  // Scanner plusieurs lignes autour de startIdx pour trouver l'en-tête
-  const searchFrom = Math.max(0, startIdx - 3);
-  for (let r = searchFrom; r <= Math.min(startIdx, rows.length - 1); r++) {
-    const row = rows[r];
-    if (!row) continue;
-    for (let c = 0; c < row.length; c++) {
-      const h = row[c].replace(/"/g,'').trim();
-      if (h === yearStr) {
-        colYear = c;
-        // Cherche % évol dans la même ligne, après colYear
-        for (let cc = c + 1; cc < row.length; cc++) {
-          const hh = row[cc].replace(/"/g,'').trim().toLowerCase();
-          if (hh.includes('vol') || hh === '%') { colEvol = cc; break; }
-        }
-        debugLog.push(`  → En-tête "${yearStr}" trouvée ligne CSV ${r} colonne ${c} (évol col ${colEvol})`);
-        return { colYear, colEvol };
-      }
-    }
-  }
-  debugLog.push(`  ⚠️ En-tête "${yearStr}" NON TROUVÉE entre lignes CSV ${searchFrom}-${startIdx}`);
-  return { colYear: -1, colEvol: -1 };
-}
- 
+
 function parseYearData(rows, year, cfg) {
-  debugLog.push(`\n=== parseYearData(${year}) ===`);
-  debugLog.push(`  rowCA=${cfg.rowCA} rowMarge=${cfg.rowMarge}`);
- 
-  const caStart    = cfg.rowCA - 1;      // index 0 basé
+  const caStart    = cfg.rowCA - 1;    // index 0 = ligne 1
   const margeStart = cfg.rowMarge > 0 ? cfg.rowMarge - 1 : null;
- 
-  // ── Section CA ──
-  // L'en-tête CA est en ligne 1 (index 0)
-  const { colYear: colCA, colEvol: colEvolCA } = findYearColumn(rows, caStart - 1, year);
-  debugLog.push(`  CA: colonne données=${colCA}, colonne évol=${colEvolCA}`);
-  debugLog.push(`  CA ligne ${caStart}: ${JSON.stringify(rows[caStart])}`);
- 
-  const ca = [], evolCA = [];
+
+  // Trouver quelle colonne correspond à l'année en lisant la ligne d'en-tête
+  const header = rows[0] || [];
+  let colYear = -1;
+  let colEvolCA = -1;
+  let colEvolMarge = -1;
+
+  // On cherche la colonne dont l'en-tête contient l'année
+  for (let c = 0; c < header.length; c++) {
+    const h = header[c].replace(/"/g,'').trim();
+    if (h === String(year)) colYear = c;
+  }
+  // Colonne % évol = juste après la colonne de l'année (si elle existe)
+  // D'après les captures : F=% évol pour CA (col index 5), D=% évol pour marge
+  // On cherche "% évol" ou "% evol" après la colonne de l'année
+  for (let c = colYear + 1; c < header.length; c++) {
+    const h = header[c].replace(/"/g,'').trim().toLowerCase();
+    if (h.includes('vol') || h.includes('%')) { colEvolCA = c; break; }
+  }
+
+  const ca        = [];
+  const marge     = [];
+  const evolCA    = [];
+  const evolMarge = [];
+
+  // Lecture CA (12 mois)
   for (let m = 0; m < 12; m++) {
     const row = rows[caStart + m];
     if (!row) { ca.push(null); evolCA.push(null); continue; }
-    const val = colCA >= 0 ? parseEuro(row[colCA]) : null;
-    const evol = colEvolCA >= 0 ? parsePct(row[colEvolCA]) : null;
-    ca.push(val);
-    evolCA.push(evol);
+    // Si colYear trouvé, on lit cette colonne; sinon on essaie col D (index 3)
+    const colCA = colYear >= 0 ? colYear : 4;
+    ca.push(parseEuro(row[colCA]));
+    evolCA.push(colEvolCA >= 0 ? parsePct(row[colEvolCA]) : null);
   }
- 
-  // ── Section Marge ──
-  const marge = [], evolMarge = [];
+
+  // Lecture Marge (12 mois) — seulement si margeStart défini
   if (margeStart !== null) {
-    // L'en-tête marge est sur la ligne JUSTE AVANT margeStart
-    // (ex: rowMarge=22 → margeStart=21 index0 → en-tête à index 20)
-    // On scanne de margeStart-3 à margeStart pour être robuste
-    const { colYear: colMarge, colEvol: colEvolMarge } = findYearColumn(rows, margeStart - 1, year);
-    debugLog.push(`  MARGE: colonne données=${colMarge}, colonne évol=${colEvolMarge}`);
-    debugLog.push(`  MARGE ligne ${margeStart}: ${JSON.stringify(rows[margeStart])}`);
- 
+    // Trouver l'en-tête de la section marge pour repérer la colonne évolution
+    const margeHeaderRow = rows[margeStart - 1] || [];
+    let colYearM = -1, colEvolM = -1;
+    for (let c = 0; c < margeHeaderRow.length; c++) {
+      const h = margeHeaderRow[c].replace(/"/g,'').trim();
+      if (h === String(year)) colYearM = c;
+    }
+    for (let c = colYearM + 1; c < margeHeaderRow.length; c++) {
+      const h = margeHeaderRow[c].replace(/"/g,'').trim().toLowerCase();
+      if (h.includes('vol') || h.includes('%')) { colEvolM = c; break; }
+    }
+    // Si pas d'en-tête propre, on suppose même disposition que CA
+    if (colYearM < 0) colYearM = colYear;
+
     for (let m = 0; m < 12; m++) {
       const row = rows[margeStart + m];
       if (!row) { marge.push(null); evolMarge.push(null); continue; }
-      const val = colMarge >= 0 ? parseEuro(row[colMarge]) : null;
-      const evol = colEvolMarge >= 0 ? parsePct(row[colEvolMarge]) : null;
-      marge.push(val);
-      evolMarge.push(evol);
+      marge.push(parseEuro(row[colYearM >= 0 ? colYearM : 2]));
+      evolMarge.push(colEvolM >= 0 ? parsePct(row[colEvolM]) : null);
     }
   }
- 
+
   return { ca, marge, evolCA, evolMarge };
 }
+
 // ══════════════════════════════════════════════════════════
 // CHARGEMENT
 // ══════════════════════════════════════════════════════════
