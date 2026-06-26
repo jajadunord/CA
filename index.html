@@ -45,7 +45,8 @@
   main{padding:24px 28px;max-width:1400px;margin:0 auto}
 
   /* KPI */
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin-bottom:24px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+  @media(max-width:500px){.kpis{grid-template-columns:1fr 1fr;gap:8px}}
   .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}
   .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--green)}
   .kpi.gold::before{background:var(--gold)}
@@ -66,10 +67,10 @@
   .legend{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap}
   .leg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
   .leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-  .chart{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:160px}
-  .bcol{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
-  .bgrp{width:100%;display:flex;gap:2px;justify-content:center;align-items:flex-end}
-  .b{flex:1;border-radius:3px 3px 0 0;min-height:2px;transform-origin:bottom;animation:grow .5s cubic-bezier(.22,.68,0,1.2) both;cursor:pointer;transition:opacity .15s;position:relative}
+  .chart{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+  .bcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+  .bgrp{width:100%;display:flex;gap:2px;justify-content:center;align-items:flex-end;height:140px}
+  .b{width:100%;border-radius:3px 3px 0 0;transform-origin:bottom;animation:grow .5s cubic-bezier(.22,.68,0,1.2) both;cursor:pointer;transition:opacity .15s;align-self:flex-end}
   .b:hover{opacity:.7}
   @keyframes grow{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
   .blbl{font-size:9px;color:var(--muted);margin-top:3px;white-space:nowrap}
@@ -118,13 +119,16 @@
   #tip{position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 11px;font-size:12px;pointer-events:none;z-index:200;display:none;white-space:nowrap;box-shadow:0 4px 16px #0005}
 
   @media(max-width:640px){
-    main{padding:14px 16px}
-    header{padding:13px 16px}
-    .tabs{padding:0 16px}
-    .chart{height:100px}
-    .kpi-val{font-size:1.2rem}
+    main{padding:12px 14px}
+    header{padding:12px 14px}
+    .tabs{padding:0 14px}
+    .kpi{padding:12px 10px}
+    .kpi-lbl{font-size:9px;letter-spacing:.06em}
+    .kpi-val{font-size:1.05rem}
+    .kpi-sub{font-size:10px}
+    .badge{font-size:10px;padding:2px 6px}
     .blbl{font-size:8px}
-    td,thead th{padding:7px 8px;font-size:11px}
+    td,thead th{padding:7px 7px;font-size:11px}
   }
 </style>
 </head>
@@ -446,8 +450,10 @@ function render(){
 
   // ── CHART
   const allv=[...yd.ca,...yd.ca1,...(hasM?yd.mg:[]),...(hasM1?yd.mg1:[])].filter(v=>v!=null&&v>0);
-  const mx = allv.length ? Math.max(...allv) : 1;
-  const h  = v => v>0 ? Math.max(2,Math.round(v/mx*100)) : 0;
+  const mx  = allv.length ? Math.max(...allv) : 1;
+  // Hauteur en px adaptée à la taille écran
+  const CHART_H = window.innerWidth < 500 ? 90 : 140;
+  const px = v => v>0 ? Math.max(3, Math.round(v/mx*CHART_H)) : 0;
 
   let bars='';
   for(let m=0;m<12;m++){
@@ -455,10 +461,10 @@ function render(){
     const d0=m*.035;
     bars+=`<div class="bcol">
       <div class="bgrp">
-        ${cP!=null?`<div class="b" style="background:#2A4D38;height:${h(cP)}%;animation-delay:${d0}s" data-t="CA ${MOIS[m]} ${py} : ${fe(cP)}"></div>`:''}
-        ${cN!=null?`<div class="b" style="background:var(--green);height:${h(cN)}%;animation-delay:${d0+.01}s" data-t="CA ${MOIS[m]} ${activeYear} : ${fe(cN)}"></div>`:''}
-        ${mP!=null?`<div class="b" style="background:#5C440F;height:${h(mP)}%;animation-delay:${d0+.02}s" data-t="Marge ${MOIS[m]} ${py} : ${fe(mP)}"></div>`:''}
-        ${mN!=null?`<div class="b" style="background:var(--gold);height:${h(mN)}%;animation-delay:${d0+.03}s" data-t="Marge ${MOIS[m]} ${activeYear} : ${fe(mN)}"></div>`:''}
+        ${cP!=null?`<div class="b" style="background:#2A4D38;height:${px(cP)}px;flex:1;animation-delay:${d0}s" data-t="CA ${MOIS[m]} ${py} : ${fe(cP)}"></div>`:''}
+        ${cN!=null?`<div class="b" style="background:var(--green);height:${px(cN)}px;flex:1;animation-delay:${d0+.01}s" data-t="CA ${MOIS[m]} ${activeYear} : ${fe(cN)}"></div>`:''}
+        ${mP!=null?`<div class="b" style="background:#5C440F;height:${px(mP)}px;flex:1;animation-delay:${d0+.02}s" data-t="Marge ${MOIS[m]} ${py} : ${fe(mP)}"></div>`:''}
+        ${mN!=null?`<div class="b" style="background:var(--gold);height:${px(mN)}px;flex:1;animation-delay:${d0+.03}s" data-t="Marge ${MOIS[m]} ${activeYear} : ${fe(mN)}"></div>`:''}
       </div>
       <div class="blbl">${SHORT[m]}</div>
     </div>`;
@@ -544,6 +550,8 @@ function render(){
 
   d.innerHTML = kpi+chart+tca+tmg;
   d.style.display='block';
+  // Ajuste la hauteur des conteneurs de barres selon CHART_H calculé
+  d.querySelectorAll('.bgrp').forEach(el=>{ el.style.height=CHART_H+'px'; });
 
   // Tooltips barres
   d.querySelectorAll('.b[data-t]').forEach(el=>{
