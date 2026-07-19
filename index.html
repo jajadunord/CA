@@ -414,31 +414,50 @@ function parseTab(rows, year) {
 //   Ligne 3+ : données journalières
 //
 function parseMoisEnCours(rows) {
-  if(!rows || rows.length < 3) return null;
+  if(!rows || rows.length < 2) return null;
+
+  // Ligne 1 (idx 0) : A1=année, B1=numéro mois
   const annee = parseInt(hdr(rows[0][0]),10) || new Date().getFullYear();
   const mois  = parseInt(hdr(rows[0][1]),10) || (new Date().getMonth()+1);
 
-  // Repérer colonnes depuis ligne 2 (en-tête)
-  const hRow = rows[1] || [];
+  // Chercher dynamiquement la ligne d'en-tête (celle qui contient "date" ou "ca")
+  // puis démarrer les données à la ligne SUIVANTE — évite tout décalage.
+  let hdrIdx = -1;
   let colDate=-1, colCA=-1, colMg=-1;
-  for(let c=0;c<hRow.length;c++){
-    const h=hdr(hRow[c]).toLowerCase();
-    if(h==='date') colDate=c;
-    else if(h==='ca') colCA=c;
-    else if(h.includes('marge')||h.includes('mg')) colMg=c;
+  for(let r=0; r<Math.min(rows.length,5); r++){
+    const row = rows[r] || [];
+    let foundDate=false, foundCA=false;
+    let tDate=-1, tCA=-1, tMg=-1;
+    for(let c=0;c<row.length;c++){
+      const h=hdr(row[c]).toLowerCase();
+      if(h==='date'){ foundDate=true; tDate=c; }
+      else if(h==='ca'){ foundCA=true; tCA=c; }
+      else if(h.includes('marge')||h==='mg'){ tMg=c; }
+    }
+    if(foundDate || foundCA){
+      hdrIdx=r; colDate=tDate; colCA=tCA; colMg=tMg;
+      break;
+    }
   }
-  if(colCA<0) colCA=1;
-  if(colMg<0) colMg=2;
+
+  // Fallbacks si en-tête non trouvé
+  if(hdrIdx<0){ hdrIdx=1; } // suppose ligne 2
+  if(colCA<0)  colCA=1;
+  if(colMg<0)  colMg=2;
   if(colDate<0) colDate=0;
 
+  dbgLines.push(`[MC] hdrIdx=${hdrIdx} colDate=${colDate} colCA=${colCA} colMg=${colMg} dataStart=${hdrIdx+1}`);
+
   const days=[];
-  for(let r=2;r<rows.length;r++){
+  for(let r=hdrIdx+1; r<rows.length; r++){
     const row=rows[r]||[];
     const dateStr=hdr(row[colDate]);
+    // Garder toutes les lignes avec une date, même sans CA (= jours sans données)
     if(!dateStr) continue;
     const ca=toNum(row[colCA]);
     const mg=toNum(row[colMg]);
     days.push({ dateStr, ca: ca&&ca>0?ca:null, mg: mg&&mg>0?mg:null });
+    if(r<=hdrIdx+3) dbgLines.push(`  r=${r}: date="${dateStr}" ca=${ca} mg=${mg}`);
   }
 
   return { annee, mois, days };
@@ -523,25 +542,27 @@ function renderMois(){
           ${evolProjCA!==null?`<span style="color:var(--border)">|</span>
           <span>Projection : <span class="mc-pace-val ${evolProjCA>=0?'pos':'neg'}">${fe(Math.round(projCA))} (${fev(evolProjCA)})</span></span>`:''}
         </div>`;
-    if(mgRefMois && totalMg>0){
-      const pctMg=Math.min(Math.round(paceMg),150);
-      const colMg=paceMg>=100?'var(--green)':'var(--gold)';
+    // Barre Marge — affichée même si mgRefMois absent (on montre la marge seule)
+    if(totalMg>0){
+      const hasMgRef = mgRefMois && mgRefMois>0;
+      const pctMg = hasMgRef ? Math.min(Math.round(paceMg),150) : 0;
+      const colMg = hasMgRef && paceMg>=100 ? 'var(--green)' : 'var(--gold)';
       prog+=`
         <div style="margin-top:16px">
         <div class="mc-progress-lbl">
           <span>Marge — ${moisNom} ${annee}</span>
-          <span>${f1(paceMg)} % du mois N-1 atteint</span>
+          <span>${hasMgRef ? f1(paceMg)+' % du mois N-1 atteint' : fe(totalMg)+' cumulé'}</span>
         </div>
         <div class="mc-bar-track">
           <div class="mc-bar-n1" style="width:100%;background:var(--border)"></div>
-          <div class="mc-bar-n"  style="width:${pctMg}%;background:${colMg}"></div>
+          ${hasMgRef ? `<div class="mc-bar-n" style="width:${pctMg}%;background:${colMg}"></div>` : `<div class="mc-bar-n" style="width:60%;background:var(--gold)"></div>`}
         </div>
         <div class="mc-pace">
-          <span>Cumulé : <span class="mc-pace-val ${paceMg>=100?'pos':'neg'}">${fe(totalMg)}</span></span>
-          <span style="color:var(--border)">|</span>
-          <span>Réf. N-1 : <span class="mc-pace-val">${fe(mgRefMois)}</span></span>
-          ${evolProjMg!==null?`<span style="color:var(--border)">|</span>
-          <span>Projection : <span class="mc-pace-val ${evolProjMg>=0?'pos':'neg'}">${fe(Math.round(projMg))} (${fev(evolProjMg)})</span></span>`:''}
+          <span>Cumulé : <span class="mc-pace-val ${hasMgRef&&paceMg>=100?'pos':'neg'}">${fe(totalMg)}</span></span>
+          ${hasMgRef ? `<span style="color:var(--border)">|</span>
+          <span>Réf. N-1 : <span class="mc-pace-val">${fe(mgRefMois)}</span></span>` : ''}
+          ${hasMgRef&&evolProjMg!==null ? `<span style="color:var(--border)">|</span>
+          <span>Projection : <span class="mc-pace-val ${evolProjMg>=0?'pos':'neg'}">${fe(Math.round(projMg))} (${fev(evolProjMg)})</span></span>` : ''}
         </div></div>`;
     }
     prog+='</div>';
