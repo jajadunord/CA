@@ -255,10 +255,14 @@ function csvParse(txt) {
 // ─── NETTOYAGE ────────────────────────────────────────────
 function toNum(s) {
   if (!s) return null;
-  // Supprime tout ce qui n'est pas chiffre, virgule, point, signe moins
-  const c = s.replace(/[^0-9,.\-]/g,'')   // garde seulement chiffres , . -
-             .replace(/,(?=\d{2}$)/, '.')  // virgule décimale FR → point si 2 chiffres après
-             .replace(/,/g,'');             // supprime séparateurs milliers restants
+  // 1. Enlever guillemets et symboles monétaires
+  let c = String(s).replace(/"/g,'').replace(/€/g,'').trim();
+  // 2. Enlever tous les espaces (normaux, insécables, fins)
+  c = c.replace(/[    \s]/g,'');
+  // 3. Si virgule décimale FR (ex: "4670,21") → remplacer par point
+  //    Mais si virgule = séparateur milliers (ex: déjà nettoyé), pas de virgule restante
+  if(/,\d{1,2}$/.test(c)) c=c.replace(',','.');
+  else c=c.replace(/,/g,'');
   const n = parseFloat(c);
   return isNaN(n)?null:n;
 }
@@ -546,28 +550,28 @@ function renderMois(){
   if(totalMg>0) kpi+=mkKpi('Moyenne/jour Marge', fk(Math.round(moyJourMg)), '', null, 'gold');
   kpi+='</div>';
 
-  // ── BARRES DE PROGRESSION vs N-1
+  // ── BARRES DE PROGRESSION vs N-1 (toujours affichées)
   let prog='';
-  if(caRefMois){
-    const pctCA  = Math.min(Math.round(paceCA),150);
-    const pctProj= Math.min(Math.round(evolProjCA>=0?(100+evolProjCA):100+evolProjCA),150);
-    const colCA  = paceCA>=100?'var(--green)':'var(--gold)';
+  {
+    const hasCARef = caRefMois && caRefMois>0;
+    const pctCA = hasCARef ? Math.min(Math.round(paceCA),150) : 0;
+    const colCA = hasCARef && paceCA>=100 ? 'var(--green)' : 'var(--gold)';
     prog+=`
       <div class="mc-progress-wrap">
         <div class="stitle">Progression vs ${prevYear}</div>
         <div class="mc-progress-lbl">
           <span>CA — ${moisNom} ${annee}</span>
-          <span>${f1(paceCA)} % du mois N-1 atteint</span>
+          <span>${hasCARef ? f1(paceCA)+' % du mois N-1 atteint' : fe(totalCA)+' cumulé'}</span>
         </div>
         <div class="mc-bar-track">
           <div class="mc-bar-n1" style="width:100%;background:var(--border)"></div>
-          <div class="mc-bar-n"  style="width:${pctCA}%;background:${colCA}"></div>
+          <div class="mc-bar-n"  style="width:${hasCARef?pctCA:60}%;background:${colCA}"></div>
         </div>
         <div class="mc-pace">
-          <span>Cumulé : <span class="mc-pace-val ${paceCA>=100?'pos':'neg'}">${fe(totalCA)}</span></span>
-          <span style="color:var(--border)">|</span>
-          <span>Réf. N-1 : <span class="mc-pace-val">${fe(caRefMois)}</span></span>
-          ${evolProjCA!==null?`<span style="color:var(--border)">|</span>
+          <span>Cumulé : <span class="mc-pace-val pos">${fe(totalCA)}</span></span>
+          ${hasCARef?`<span style="color:var(--border)">|</span>
+          <span>Réf. N-1 : <span class="mc-pace-val">${fe(caRefMois)}</span></span>`:''}
+          ${hasCARef&&evolProjCA!==null?`<span style="color:var(--border)">|</span>
           <span>Projection : <span class="mc-pace-val ${evolProjCA>=0?'pos':'neg'}">${fe(Math.round(projCA))} (${fev(evolProjCA)})</span></span>`:''}
         </div>`;
     // Barre Marge — affichée même si mgRefMois absent (on montre la marge seule)
