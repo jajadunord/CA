@@ -255,8 +255,10 @@ function csvParse(txt) {
 // ─── NETTOYAGE ────────────────────────────────────────────
 function toNum(s) {
   if (!s) return null;
-  // Supprime : guillemets, espaces (normal + insécable + fin-de-ligne), €, garde chiffres , .  - 
-  const c = s.replace(/"/g,'').replace(/[\u00a0\u202f\u2009\s]/g,'').replace(/\u00e2\u0080\u00af/g,'').replace('€','').replace(',','.');
+  // Supprime tout ce qui n'est pas chiffre, virgule, point, signe moins
+  const c = s.replace(/[^0-9,.\-]/g,'')   // garde seulement chiffres , . -
+             .replace(/,(?=\d{2}$)/, '.')  // virgule décimale FR → point si 2 chiffres après
+             .replace(/,/g,'');             // supprime séparateurs milliers restants
   const n = parseFloat(c);
   return isNaN(n)?null:n;
 }
@@ -480,10 +482,20 @@ function renderMois(){
   const moisNom = MOIS_LONG[mois-1] || '';
   const prevYear = annee - 1;
 
-  // Données N-1 pour ce mois depuis DATA[prevYear]
+  // Références N-1 pour ce mois
+  // CA N-1 : d'abord dans DATA[annee].ca1[mois-1] (colonne N-1 de l'onglet courant)
+  //          sinon dans DATA[prevYear].ca[mois-1] (onglet de l'année précédente)
+  const ydCurr = DATA[annee];
   const ydPrev = DATA[prevYear];
-  const caRefMois    = ydPrev ? ydPrev.ca[mois-1]  : null;  // CA total mois N-1
-  const mgRefMois    = ydPrev ? ydPrev.mg[mois-1]  : null;  // Marge mois N-1
+  const caRefMois = (ydCurr && ydCurr.ca1 && ydCurr.ca1[mois-1])
+                    ? ydCurr.ca1[mois-1]
+                    : (ydPrev ? ydPrev.ca[mois-1] : null);
+  // Marge N-1 : dans DATA[annee].mg1[mois-1] (colonne N-1 de la section Marge)
+  //             sinon dans DATA[prevYear].mg[mois-1]
+  const mgRefMois = (ydCurr && ydCurr.mg1 && ydCurr.mg1[mois-1])
+                    ? ydCurr.mg1[mois-1]
+                    : (ydPrev && ydPrev.mg ? ydPrev.mg[mois-1] : null);
+  dbgLines.push(`[MC] caRef=${caRefMois} mgRef=${mgRefMois} (annee=${annee} mois=${mois})`);
 
   // Calculs journées
   const joursReel  = days.filter(d=>d.ca!==null).length;
