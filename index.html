@@ -416,51 +416,69 @@ function parseTab(rows, year) {
 //   Ligne 3+ : données journalières
 //
 function parseMoisEnCours(rows) {
-  if(!rows || rows.length < 3) return null;
+  if(!rows || rows.length < 2) return null;
 
-  // Log brut pour diagnostic
-  for(let i=0;i<Math.min(4,rows.length);i++)
-    dbgLines.push(`[MC-raw] rows[${i}]= ${JSON.stringify(rows[i])}`);
+  // ── LOG BRUT des 6 premières lignes
+  for(let i=0;i<Math.min(6,rows.length);i++)
+    dbgLines.push(`[MC-raw${i}] ${JSON.stringify(rows[i])}`);
 
-  // Ligne 0 (idx 0) : métadonnées — cherche année (>2000) et mois (1-12)
+  // ── ÉTAPE 1 : trouver année et mois dans toutes les cellules des 3 premières lignes
   let annee=0, mois=0;
-  for(const cell of (rows[0]||[])){
-    const n=parseInt(String(cell).replace(/[^0-9]/g,''),10);
-    if(!isNaN(n)){ if(n>2000&&!annee) annee=n; else if(n>=1&&n<=12&&!mois) mois=n; }
+  outer: for(let ri=0;ri<Math.min(3,rows.length);ri++){
+    for(const cell of (rows[ri]||[])){
+      const n=parseInt(String(cell||'').replace(/\D/g,''),10);
+      if(n>2000 && !annee) annee=n;
+      else if(n>=1 && n<=12 && !mois) mois=n;
+      if(annee && mois) break outer;
+    }
   }
   if(!annee) annee=new Date().getFullYear();
   if(!mois)  mois=new Date().getMonth()+1;
 
-  // Ligne 1 (idx 1) : en-têtes fixes — Date | CA | Marge
-  // On lit les colonnes depuis cette ligne mais on ne la cherche PAS dynamiquement
-  // pour éviter que "01/07/2026" soit confondu avec un en-tête.
-  const hdrRow = rows[1] || [];
-  let colDate=0, colCA=1, colMg=2;  // valeurs par défaut connues
-  for(let c=0;c<hdrRow.length;c++){
-    const h=String(hdrRow[c]).toLowerCase().replace(/[^a-z]/g,'');
-    if(h==='date')             colDate=c;
-    else if(h==='ca')          colCA=c;
-    else if(h==='marge'||h==='mg') colMg=c;
+  // ── ÉTAPE 2 : trouver la ligne d'en-têtes (contient "date" ET/OU "ca" en texte pur)
+  // ET définir les indices de colonnes
+  let colDate=0, colCA=1, colMg=2;
+  let hdrRowIdx = -1;
+  for(let ri=0;ri<Math.min(5,rows.length);ri++){
+    const row = rows[ri]||[];
+    const norm = row.map(c=>String(c||'').replace(/[^a-zA-Z]/g,'').toLowerCase());
+    const hasDate = norm.some(h=>h==='date');
+    const hasCA   = norm.some(h=>h==='ca');
+    if(hasDate || hasCA){
+      hdrRowIdx = ri;
+      colDate = norm.findIndex(h=>h==='date');   if(colDate<0) colDate=0;
+      colCA   = norm.findIndex(h=>h==='ca');     if(colCA<0)   colCA=1;
+      colMg   = norm.findIndex(h=>h==='marge'||h==='mg'); if(colMg<0) colMg=2;
+      dbgLines.push(`[MC] En-tête à rows[${ri}]: date=${colDate} ca=${colCA} mg=${colMg}`);
+      break;
+    }
   }
+  if(hdrRowIdx<0) dbgLines.push(`[MC] Pas d'en-tête trouvé, colonnes par défaut`);
 
-  // Données : TOUJOURS à partir de rows[2] (ligne 3 du sheet)
-  const DATA_START = 2;
-  dbgLines.push(`[MC] annee=${annee} mois=${mois} cols: date=${colDate} ca=${colCA} mg=${colMg} → dataStart=${DATA_START}`);
-
+  // ── ÉTAPE 3 : lire les données — UNIQUEMENT les lignes dont colDate ressemble à une date
+  // (format dd/mm/yyyy, dd-mm-yyyy, etc.)
+  const reDateFR = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/;
   const days=[];
-  for(let r=DATA_START;r<rows.length;r++){
+  for(let r=0;r<rows.length;r++){
+    if(r===hdrRowIdx) continue;           // sauter la ligne d'en-têtes
     const row=rows[r]||[];
-    const dateStr=String(row[colDate]||'').replace(/"/g,'').trim();
-    if(!dateStr) continue;
-    const ca=toNum(String(row[colCA]||''));
-    const mg=toNum(String(row[colMg]||''));
-    days.push({ dateStr, ca:(ca!==null&&ca>0)?ca:null, mg:(mg!==null&&mg>0)?mg:null });
-    if(r<DATA_START+5)
-      dbgLines.push(`  [MC] r=${r}: "${dateStr}" ca=${ca} mg=${mg}`);
+    const dateRaw=String(row[colDate]||'').replace(/"/g,'').trim();
+    if(!reDateFR.test(dateRaw)) continue; // pas une date → ignorer
+    const caRaw=String(row[colCA]||'');
+    const mgRaw=String(row[colMg]||'');
+    const ca=toNum(caRaw);
+    const mg=toNum(mgRaw);
+    const caVal=(ca!==null&&ca>0)?ca:null;
+    const mgVal=(mg!==null&&mg>0)?mg:null;
+    days.push({dateStr:dateRaw, ca:caVal, mg:mgVal});
+    if(days.length<=6)
+      dbgLines.push(`  [MC-d] r=${r} "${dateRaw}" caRaw="${caRaw}"→${caVal} mgRaw="${mgRaw}"→${mgVal}`);
   }
 
   const n=days.length;
-  dbgLines.push(`[MC] ${n} jours. 1er="${n?days[0].dateStr:'-'}" dernier="${n?days[n-1].dateStr:'-'}"`);
+  const totCA=days.reduce((t,d)=>t+(d.ca||0),0);
+  const totMg=days.reduce((t,d)=>t+(d.mg||0),0);
+  dbgLines.push(`[MC] ${n} jours | 1er="${n?days[0].dateStr:'-'}" | totCA=${totCA} totMg=${totMg}`);
   return { annee, mois, days };
 }
 const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
