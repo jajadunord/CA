@@ -488,177 +488,156 @@ function parseMoisEnCours(rows) {
 const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
 function renderMois(){
-  const d=document.getElementById('dash');
+  const el=document.getElementById('dash');
   const mc=DATA['mc'];
   if(!mc||!mc.days||!mc.days.length){
-    d.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)">
+    el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)">
       Onglet "Mois en cours" introuvable ou vide.<br>
-      <small>Vérifiez le nom de l'onglet dans ⚙️ Configuration (champ "Nom onglet mois en cours").</small>
-    </div>`;
-    d.style.display='block'; return;
+      <small>Vérifiez le nom dans ⚙️ Configuration.</small></div>`;
+    el.style.display='block'; return;
   }
 
   const { annee, mois, days } = mc;
-  const moisNom = MOIS_LONG[mois-1] || '';
+  const moisNom  = MOIS_LONG[mois-1] || '';
   const prevYear = annee - 1;
 
-  // Références N-1 pour ce mois
-  // CA N-1 : d'abord dans DATA[annee].ca1[mois-1] (colonne N-1 de l'onglet courant)
-  //          sinon dans DATA[prevYear].ca[mois-1] (onglet de l'année précédente)
-  const ydCurr = DATA[annee];
-  const ydPrev = DATA[prevYear];
-  const caRefMois = (ydCurr && ydCurr.ca1 && ydCurr.ca1[mois-1])
-                    ? ydCurr.ca1[mois-1]
-                    : (ydPrev ? ydPrev.ca[mois-1] : null);
-  // Marge N-1 : dans DATA[annee].mg1[mois-1] (colonne N-1 de la section Marge)
-  //             sinon dans DATA[prevYear].mg[mois-1]
-  const mgRefMois = (ydCurr && ydCurr.mg1 && ydCurr.mg1[mois-1])
-                    ? ydCurr.mg1[mois-1]
-                    : (ydPrev && ydPrev.mg ? ydPrev.mg[mois-1] : null);
-  dbgLines.push(`[MC] caRef=${caRefMois} mgRef=${mgRefMois} (annee=${annee} mois=${mois})`);
+  // ── Références N-1 (CA et Marge du même mois l'an dernier)
+  // Chercher dans l'onglet annee courant (colonne N-1) puis dans l'onglet prevYear
+  const ydCurr  = DATA[annee];
+  const ydPrev  = DATA[prevYear];
+  const caRef   = (ydCurr?.ca1?.[mois-1]) || (ydPrev?.ca?.[mois-1]) || null;
+  const mgRef   = (ydCurr?.mg1?.[mois-1]) || (ydPrev?.mg?.[mois-1]) || null;
+  dbgLines.push(`[render] caRef=${caRef} mgRef=${mgRef} annee=${annee} mois=${mois}`);
 
-  // Calculs journées
-  const joursReel  = days.filter(d=>d.ca!==null).length;
-  const joursTotal = days.length;
-  const totalCA    = days.reduce((t,d)=>t+(d.ca||0),0);
-  const totalMg    = days.reduce((t,d)=>t+(d.mg||0),0);
-  const moyJourCA  = joursReel>0 ? totalCA/joursReel : 0;
-  const moyJourMg  = joursReel>0 ? totalMg/joursReel : 0;
+  // ── Calculs sur les jours
+  const daysAvecCA  = days.filter(d=>d.ca!==null);
+  const daysAvecMg  = days.filter(d=>d.mg!==null);
+  const joursReel   = daysAvecCA.length;
+  const totalCA     = daysAvecCA.reduce((t,d)=>t+d.ca,0);
+  const totalMg     = daysAvecMg.reduce((t,d)=>t+d.mg,0);
+  const moyCA       = joursReel>0 ? totalCA/joursReel : 0;
+  const moyMg       = joursReel>0 ? totalMg/joursReel : 0;
+  const joursVides  = days.filter(d=>d.ca===null).length;
+  const projCA      = totalCA + moyCA*joursVides;
+  const projMg      = totalMg + moyMg*joursVides;
+  const txMg        = totalCA>0 ? totalMg/totalCA*100 : null;
+  dbgLines.push(`[render] joursReel=${joursReel} totalCA=${totalCA} totalMg=${totalMg}`);
 
-  // Jours restants dans le mois (jours calendaires sans données)
-  const joursRestants = days.filter(d=>d.ca===null).length;
-  // Projection fin de mois
-  const projCA = totalCA + moyJourCA * joursRestants;
-  const projMg = totalMg + moyJourMg * joursRestants;
+  // ── Évolutions vs N-1
+  const pctCA      = (caRef&&caRef>0) ? totalCA/caRef*100 : null;
+  const pctMg      = (mgRef&&mgRef>0) ? totalMg/mgRef*100 : null;
+  const evolProjCA = (caRef&&caRef>0) ? (projCA-caRef)/caRef*100 : null;
+  const evolProjMg = (mgRef&&mgRef>0) ? (projMg-mgRef)/mgRef*100 : null;
 
-  // Pace vs N-1
-  const paceCA = caRefMois && caRefMois>0 ? (totalCA/caRefMois*100) : null; // % du mois N-1 déjà atteint
-  const paceMg = mgRefMois && mgRefMois>0 ? (totalMg/mgRefMois*100) : null;
-  const evolProjCA = caRefMois && caRefMois>0 ? (projCA-caRefMois)/caRefMois*100 : null;
-  const evolProjMg = mgRefMois && mgRefMois>0 ? (projMg-mgRefMois)/mgRefMois*100 : null;
+  // ────────────────────────────────────────────────────────────
+  // KPI CARDS
+  // ────────────────────────────────────────────────────────────
+  const kpi = `<div class="kpis">
+    ${mkKpi('CA cumulé — '+moisNom, fe(totalCA), joursReel+' jour'+(joursReel>1?'s':''), null, '')}
+    ${mkKpi('Projection fin '+moisNom, fe(Math.round(projCA)), caRef?'Réf. '+prevYear+' : '+fe(caRef):'', evolProjCA, '')}
+    ${totalMg>0 ? mkKpi('Marge cumulée', fe(totalMg), txMg?'Taux : '+f1(txMg)+' %':'', null, 'gold') : ''}
+    ${totalMg>0 ? mkKpi('Projection marge', fe(Math.round(projMg)), mgRef?'Réf. '+prevYear+' : '+fe(mgRef):'', evolProjMg, 'gold') : ''}
+    ${mkKpi('Moyenne/jour CA', fk(Math.round(moyCA)), 'sur '+joursReel+' jours', null, '')}
+    ${totalMg>0 ? mkKpi('Moyenne/jour Marge', fk(Math.round(moyMg)), '', null, 'gold') : ''}
+  </div>`;
 
-  // ── KPI
-  let kpi=`<div class="kpis">`;
-  kpi+=mkKpi(`CA cumulé — ${moisNom}`, fe(totalCA), `${joursReel} jours`, null, '');
-  kpi+=mkKpi(`Projection fin ${moisNom}`, fe(Math.round(projCA)), caRefMois?`Réf. ${prevYear} : ${fe(caRefMois)}`:'', evolProjCA, '');
-  if(totalMg>0){
-    const txMg = totalCA>0?totalMg/totalCA*100:null;
-    kpi+=mkKpi(`Marge cumulée`, fe(totalMg), txMg?'Taux : '+f1(txMg)+' %':'', null, 'gold');
-    kpi+=mkKpi(`Projection marge`, fe(Math.round(projMg)), mgRefMois?`Réf. ${prevYear} : ${fe(mgRefMois)}`:'', evolProjMg, 'gold');
-  }
-  kpi+=mkKpi('Moyenne/jour CA', fk(Math.round(moyJourCA)), `sur ${joursReel} jours`, null, '');
-  if(totalMg>0) kpi+=mkKpi('Moyenne/jour Marge', fk(Math.round(moyJourMg)), '', null, 'gold');
-  kpi+='</div>';
-
-  // ── BARRES DE PROGRESSION vs N-1 (toujours affichées)
-  let prog='';
-  {
-    const hasCARef = caRefMois && caRefMois>0;
-    const pctCA = hasCARef ? Math.min(Math.round(paceCA),150) : 0;
-    const colCA = hasCARef && paceCA>=100 ? 'var(--green)' : 'var(--gold)';
-    prog+=`
-      <div class="mc-progress-wrap">
-        <div class="stitle">Progression vs ${prevYear}</div>
-        <div class="mc-progress-lbl">
-          <span>CA — ${moisNom} ${annee}</span>
-          <span>${hasCARef ? f1(paceCA)+' % du mois N-1 atteint' : fe(totalCA)+' cumulé'}</span>
-        </div>
-        <div class="mc-bar-track">
-          <div class="mc-bar-n1" style="width:100%;background:var(--border)"></div>
-          <div class="mc-bar-n"  style="width:${hasCARef?pctCA:60}%;background:${colCA}"></div>
-        </div>
-        <div class="mc-pace">
-          <span>Cumulé : <span class="mc-pace-val pos">${fe(totalCA)}</span></span>
-          ${hasCARef?`<span style="color:var(--border)">|</span>
-          <span>Réf. N-1 : <span class="mc-pace-val">${fe(caRefMois)}</span></span>`:''}
-          ${hasCARef&&evolProjCA!==null?`<span style="color:var(--border)">|</span>
-          <span>Projection : <span class="mc-pace-val ${evolProjCA>=0?'pos':'neg'}">${fe(Math.round(projCA))} (${fev(evolProjCA)})</span></span>`:''}
-        </div>`;
-    // Barre Marge — affichée même si mgRefMois absent (on montre la marge seule)
-    if(totalMg>0){
-      const hasMgRef = mgRefMois && mgRefMois>0;
-      const pctMg = hasMgRef ? Math.min(Math.round(paceMg),150) : 0;
-      const colMg = hasMgRef && paceMg>=100 ? 'var(--green)' : 'var(--gold)';
-      prog+=`
-        <div style="margin-top:16px">
-        <div class="mc-progress-lbl">
-          <span>Marge — ${moisNom} ${annee}</span>
-          <span>${hasMgRef ? f1(paceMg)+' % du mois N-1 atteint' : fe(totalMg)+' cumulé'}</span>
-        </div>
-        <div class="mc-bar-track">
-          <div class="mc-bar-n1" style="width:100%;background:var(--border)"></div>
-          ${hasMgRef ? `<div class="mc-bar-n" style="width:${pctMg}%;background:${colMg}"></div>` : `<div class="mc-bar-n" style="width:60%;background:var(--gold)"></div>`}
-        </div>
-        <div class="mc-pace">
-          <span>Cumulé : <span class="mc-pace-val ${hasMgRef&&paceMg>=100?'pos':'neg'}">${fe(totalMg)}</span></span>
-          ${hasMgRef ? `<span style="color:var(--border)">|</span>
-          <span>Réf. N-1 : <span class="mc-pace-val">${fe(mgRefMois)}</span></span>` : ''}
-          ${hasMgRef&&evolProjMg!==null ? `<span style="color:var(--border)">|</span>
-          <span>Projection : <span class="mc-pace-val ${evolProjMg>=0?'pos':'neg'}">${fe(Math.round(projMg))} (${fev(evolProjMg)})</span></span>` : ''}
-        </div></div>`;
-    }
-    prog+='</div>';
+  // ────────────────────────────────────────────────────────────
+  // BARRES DE PROGRESSION
+  // ────────────────────────────────────────────────────────────
+  function barreProgression(label, cumule, ref, pct, evolProj, couleur) {
+    const haRef  = ref!==null && ref>0;
+    const barPct = haRef ? Math.min(Math.round(pct), 100) : 50;
+    const barCol = haRef ? (pct>=100?'var(--green)':couleur) : couleur;
+    const evolStr= evolProj!==null
+      ? `<span style="color:var(--border)">|</span>
+         <span>Projection : <span class="mc-pace-val ${evolProj>=0?'pos':'neg'}">${fe(Math.round(cumule+(cumule/Math.max(1,pct/100-1+1)*0)))} ${fev(evolProj)}</span></span>`
+      : '';
+    return `
+      <div class="mc-progress-lbl">
+        <span>${label}</span>
+        <span>${haRef ? f1(pct)+' % du mois '+prevYear : fe(cumule)+' cumulé'}</span>
+      </div>
+      <div style="background:var(--border);border-radius:20px;height:12px;overflow:hidden;margin-bottom:8px;position:relative">
+        <div style="position:absolute;top:0;left:0;height:100%;width:${barPct}%;background:${barCol};border-radius:20px;transition:width .8s cubic-bezier(.22,.68,0,1.2)"></div>
+      </div>
+      <div class="mc-pace">
+        <span>Cumulé : <span class="mc-pace-val pos">${fe(cumule)}</span></span>
+        ${haRef?`<span style="color:var(--border)">|</span><span>N-1 : <span class="mc-pace-val">${fe(ref)}</span></span>`:''}
+        ${haRef&&evolProj!==null?`<span style="color:var(--border)">|</span>
+        <span>Proj. fin mois : <span class="mc-pace-val ${evolProj>=0?'pos':'neg'}">${fev(evolProj)}</span></span>`:''}
+      </div>`;
   }
 
-  // ── SPARKLINE journalier CA
-  const daysCA = days.filter(d=>d.ca!==null);
-  let spark='';
-  if(daysCA.length>0){
-    const mxCA=Math.max(...daysCA.map(x=>x.ca));
-    spark=`<div class="stitle">CA par jour</div>
+  const prog = `
+    <div class="mc-progress-wrap">
+      <div class="stitle">Progression vs ${prevYear}</div>
+      ${barreProgression('CA TTC — '+moisNom+' '+annee, totalCA, caRef, pctCA, evolProjCA, 'var(--gold)')}
+      ${totalMg>0 ? '<div style="margin-top:18px">'+barreProgression('Marge — '+moisNom+' '+annee, totalMg, mgRef, pctMg, evolProjMg, 'var(--gold)')+'</div>' : ''}
+    </div>`;
+
+  // ────────────────────────────────────────────────────────────
+  // SPARKLINE CA
+  // ────────────────────────────────────────────────────────────
+  let spark = '';
+  if(daysAvecCA.length>0){
+    const mxCA = Math.max(...daysAvecCA.map(d=>d.ca));
+    spark = `<div class="stitle">CA par jour</div>
     <div class="chart-wrap">
       <div class="mc-sparkline">
         ${days.map(day=>{
-          if(day.ca===null) return `<div class="mc-spark-bar" style="background:var(--border);height:3px;opacity:.3" data-t="${day.dateStr} : —"></div>`;
+          if(!day.ca) return `<div class="mc-spark-bar" style="background:var(--border);height:3px;opacity:.3" data-t="${day.dateStr} : —"></div>`;
           const h=Math.max(4,Math.round(day.ca/mxCA*46));
-          return `<div class="mc-spark-bar" style="background:var(--green);height:${h}px" data-t="${day.dateStr} : ${fe(day.ca)}${day.mg?'  Marge : '+fe(day.mg):''}"></div>`;
+          return `<div class="mc-spark-bar" style="background:var(--green);height:${h}px" data-t="${day.dateStr} : ${fe(day.ca)}${day.mg?' | Marge : '+fe(day.mg):''}"></div>`;
         }).join('')}
       </div>
     </div>`;
   }
 
-  // ── TABLEAU JOURNALIER
-  let tbl=`
-    <div class="stitle">Détail journalier</div>
-    <div class="mc-day-table"><table>
-      <thead><tr>
-        <th style="text-align:left">Date</th>
-        <th>CA TTC</th>
-        ${days.some(d=>d.mg!==null)?'<th>Marge</th><th>Taux</th>':''}
-      </tr></thead><tbody>`;
+  // ────────────────────────────────────────────────────────────
+  // TABLEAU JOURNALIER
+  // ────────────────────────────────────────────────────────────
   const hasMgCol = days.some(d=>d.mg!==null);
   let cumCA=0, cumMg=0;
+  let rows='';
   for(const day of days){
     if(day.ca) cumCA+=day.ca;
     if(day.mg) cumMg+=day.mg;
-    const tx=day.ca&&day.mg?day.mg/day.ca*100:null;
-    tbl+=`<tr ${day.ca===null?'style="opacity:.45"':''}>
+    const tx = day.ca&&day.mg ? day.mg/day.ca*100 : null;
+    rows+=`<tr ${!day.ca?'style="opacity:.4"':''}>
       <td>${day.dateStr}</td>
       <td>${day.ca!==null?fe(day.ca):'—'}</td>
       ${hasMgCol?`<td>${day.mg!==null?fe(day.mg):'—'}</td><td>${tx!==null?f1(tx)+' %':'—'}</td>`:''}
     </tr>`;
   }
-  tbl+=`<tr class="tot">
-    <td>TOTAL</td>
-    <td>${fe(cumCA)}</td>
-    ${hasMgCol?`<td>${fe(cumMg)}</td><td>${cumCA>0?f1(cumMg/cumCA*100)+' %':'—'}</td>`:''}
-  </tr></tbody></table></div>`;
+  const tbl=`
+    <div class="stitle">Détail journalier</div>
+    <div class="mc-day-table"><table>
+      <thead><tr>
+        <th style="text-align:left">Date</th>
+        <th>CA TTC</th>
+        ${hasMgCol?'<th>Marge</th><th>Taux</th>':''}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr class="tot">
+        <td>TOTAL</td><td>${fe(cumCA)}</td>
+        ${hasMgCol?`<td>${fe(cumMg)}</td><td>${cumCA>0?f1(cumMg/cumCA*100)+' %':'—'}</td>`:''}
+      </tr></tfoot>
+    </table></div>`;
 
-  d.innerHTML=kpi+prog+spark+tbl;
-  d.style.display='block';
+  el.innerHTML = kpi+prog+spark+tbl;
+  el.style.display='block';
 
   // Tooltips sparkline
-  d.querySelectorAll('.mc-spark-bar[data-t]').forEach(el=>{
-    el.addEventListener('mousemove',e=>{
-      const tip=document.getElementById('tip');
-      tip.textContent=el.dataset.t;
-      tip.style.display='block';
-      tip.style.left=(e.clientX+12)+'px';
-      tip.style.top=(e.clientY-34)+'px';
+  el.querySelectorAll('.mc-spark-bar[data-t]').forEach(b=>{
+    b.addEventListener('mousemove',e=>{
+      const t=document.getElementById('tip');
+      t.textContent=b.dataset.t; t.style.display='block';
+      t.style.left=(e.clientX+12)+'px'; t.style.top=(e.clientY-34)+'px';
     });
-    el.addEventListener('mouseleave',()=>{document.getElementById('tip').style.display='none';});
+    b.addEventListener('mouseleave',()=>{ document.getElementById('tip').style.display='none'; });
   });
 }
+
 
 // ─── CHARGEMENT ──────────────────────────────────────────
 async function loadAll(){
