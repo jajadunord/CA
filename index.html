@@ -416,51 +416,62 @@ function parseTab(rows, year) {
 //   Ligne 3+ : données journalières
 //
 function parseMoisEnCours(rows) {
-  if(!rows || rows.length < 3) return null;
+  if(!rows || rows.length < 2) return null;
 
-  // Log brut pour diagnostic
-  for(let i=0;i<Math.min(4,rows.length);i++)
-    dbgLines.push(`[MC-raw] rows[${i}]= ${JSON.stringify(rows[i])}`);
+  // Log TOUTES les premières lignes pour voir ce que le CSV contient vraiment
+  for(let i=0;i<Math.min(6,rows.length);i++)
+    dbgLines.push(`[MC-raw${i}] ${JSON.stringify(rows[i])}`);
 
-  // Ligne 0 (idx 0) : métadonnées — cherche année (>2000) et mois (1-12)
+  // Chercher l'année et le mois dans les 3 premières lignes
   let annee=0, mois=0;
-  for(const cell of (rows[0]||[])){
-    const n=parseInt(String(cell).replace(/[^0-9]/g,''),10);
-    if(!isNaN(n)){ if(n>2000&&!annee) annee=n; else if(n>=1&&n<=12&&!mois) mois=n; }
+  for(let ri=0;ri<Math.min(3,rows.length);ri++){
+    for(const cell of (rows[ri]||[])){
+      const n=parseInt(String(cell).replace(/[^0-9]/g,''),10);
+      if(!isNaN(n)){
+        if(n>2000&&!annee) annee=n;
+        else if(n>=1&&n<=12&&!mois) mois=n;
+      }
+    }
+    if(annee&&mois) break;
   }
   if(!annee) annee=new Date().getFullYear();
   if(!mois)  mois=new Date().getMonth()+1;
 
-  // Ligne 1 (idx 1) : en-têtes fixes — Date | CA | Marge
-  // On lit les colonnes depuis cette ligne mais on ne la cherche PAS dynamiquement
-  // pour éviter que "01/07/2026" soit confondu avec un en-tête.
-  const hdrRow = rows[1] || [];
-  let colDate=0, colCA=1, colMg=2;  // valeurs par défaut connues
-  for(let c=0;c<hdrRow.length;c++){
-    const h=String(hdrRow[c]).toLowerCase().replace(/[^a-z]/g,'');
-    if(h==='date')             colDate=c;
-    else if(h==='ca')          colCA=c;
-    else if(h==='marge'||h==='mg') colMg=c;
+  // Colonnes fixes connues (Date=0, CA=1, Marge=2)
+  // Chercher uniquement dans une ligne qui ressemble à des en-têtes texte
+  let colDate=0, colCA=1, colMg=2, hdrFound=false;
+  for(let ri=0;ri<Math.min(4,rows.length);ri++){
+    const row=rows[ri]||[];
+    const texts=row.map(c=>String(c||'').toLowerCase().replace(/[^a-z]/g,''));
+    if(texts.includes('date')||texts.includes('ca')){
+      colDate=texts.indexOf('date')>=0?texts.indexOf('date'):0;
+      colCA=texts.indexOf('ca')>=0?texts.indexOf('ca'):1;
+      const mi=texts.findIndex(t=>t==='marge'||t==='mg');
+      colMg=mi>=0?mi:2;
+      hdrFound=true;
+      dbgLines.push(`[MC] En-têtes trouvés à rows[${ri}]: date=${colDate} ca=${colCA} mg=${colMg}`);
+      break;
+    }
   }
+  if(!hdrFound) dbgLines.push(`[MC] Pas d'en-têtes trouvés, colonnes par défaut 0,1,2`);
 
-  // Données : TOUJOURS à partir de rows[2] (ligne 3 du sheet)
-  const DATA_START = 2;
-  dbgLines.push(`[MC] annee=${annee} mois=${mois} cols: date=${colDate} ca=${colCA} mg=${colMg} → dataStart=${DATA_START}`);
-
+  // Lire TOUTES les lignes qui ont une date valide (JJ/MM/AAAA ou similaire)
+  // On ne se base PAS sur un DATA_START fixe — on filtre par contenu
   const days=[];
-  for(let r=DATA_START;r<rows.length;r++){
+  for(let r=0;r<rows.length;r++){
     const row=rows[r]||[];
-    const dateStr=String(row[colDate]||'').replace(/"/g,'').trim();
-    if(!dateStr) continue;
+    const dateRaw=String(row[colDate]||'').replace(/"/g,'').trim();
+    // Une date ressemble à dd/mm/yyyy ou dd-mm-yyyy (contient un / ou - et des chiffres)
+    if(!dateRaw||!/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(dateRaw)) continue;
     const ca=toNum(String(row[colCA]||''));
     const mg=toNum(String(row[colMg]||''));
-    days.push({ dateStr, ca:(ca!==null&&ca>0)?ca:null, mg:(mg!==null&&mg>0)?mg:null });
-    if(r<DATA_START+5)
-      dbgLines.push(`  [MC] r=${r}: "${dateStr}" ca=${ca} mg=${mg}`);
+    days.push({ dateStr:dateRaw, ca:(ca!==null&&ca>0)?ca:null, mg:(mg!==null&&mg>0)?mg:null });
+    if(days.length<=5)
+      dbgLines.push(`  [MC] r=${r}: "${dateRaw}" ca=${ca} mg=${mg}`);
   }
 
   const n=days.length;
-  dbgLines.push(`[MC] ${n} jours. 1er="${n?days[0].dateStr:'-'}" dernier="${n?days[n-1].dateStr:'-'}"`);
+  dbgLines.push(`[MC] annee=${annee} mois=${mois} — ${n} jours. 1er="${n?days[0].dateStr:'-'}" dernier="${n?days[n-1].dateStr:'-'}"`);
   return { annee, mois, days };
 }
 const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
