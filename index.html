@@ -130,6 +130,24 @@
     .blbl{font-size:8px}
     td,thead th{padding:7px 7px;font-size:11px}
   }
+
+  /* MOIS EN COURS */
+  .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  @media(max-width:500px){.mc-grid{grid-template-columns:1fr}}
+  .mc-progress-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:20px}
+  .mc-progress-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+  .mc-bar-track{background:var(--border);border-radius:20px;height:10px;overflow:hidden;margin-bottom:6px;position:relative}
+  .mc-bar-fill{height:100%;border-radius:20px;transition:width .8s cubic-bezier(.22,.68,0,1.2)}
+  .mc-bar-n1{position:absolute;top:0;left:0;height:100%;border-radius:20px;opacity:.35}
+  .mc-bar-n{position:absolute;top:0;left:0;height:100%;border-radius:20px}
+  .mc-day-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+  .mc-sparkline{display:flex;align-items:flex-end;gap:2px;height:50px;padding:4px 0 0}
+  .mc-spark-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;cursor:pointer;transition:opacity .15s}
+  .mc-spark-bar:hover{opacity:.7}
+  .mc-pace{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+  .mc-pace-val{font-weight:700;font-size:13px}
+  .mc-pace-val.pos{color:var(--green)}
+  .mc-pace-val.neg{color:var(--red)}
 </style>
 </head>
 <body>
@@ -176,6 +194,11 @@
       <label>Ligne Sheets où commence Janvier (Marge) — 0 si pas de marge</label>
       <input id="cRowM" placeholder="22">
       <div class="hint">Ex : 22 (la ligne juste au-dessus contient les en-têtes Marge)</div>
+    </div>
+    <div class="fg">
+      <label>Nom de l'onglet "Mois en cours"</label>
+      <input id="cTabMC" placeholder="Mois en cours">
+      <div class="hint">Nom exact de l'onglet dans le sheet (sensible à la casse).</div>
     </div>
     <p style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6">
       ⚠️ Le sheet doit être partagé : Fichier → Partager → Tout le monde avec le lien → Lecteur.
@@ -383,6 +406,207 @@ function parseTab(rows, year) {
   return { ca, ca1, eca, mg, mg1, emg };
 }
 
+// ─── MOIS EN COURS ───────────────────────────────────────
+//
+// Structure onglet "Mois en cours" :
+//   Ligne 1 : année (A1) | numéro mois (B1)
+//   Ligne 2 : en-têtes  Date | CA | Marge
+//   Ligne 3+ : données journalières
+//
+function parseMoisEnCours(rows) {
+  if(!rows || rows.length < 3) return null;
+  const annee = parseInt(hdr(rows[0][0]),10) || new Date().getFullYear();
+  const mois  = parseInt(hdr(rows[0][1]),10) || (new Date().getMonth()+1);
+
+  // Repérer colonnes depuis ligne 2 (en-tête)
+  const hRow = rows[1] || [];
+  let colDate=-1, colCA=-1, colMg=-1;
+  for(let c=0;c<hRow.length;c++){
+    const h=hdr(hRow[c]).toLowerCase();
+    if(h==='date') colDate=c;
+    else if(h==='ca') colCA=c;
+    else if(h.includes('marge')||h.includes('mg')) colMg=c;
+  }
+  if(colCA<0) colCA=1;
+  if(colMg<0) colMg=2;
+  if(colDate<0) colDate=0;
+
+  const days=[];
+  for(let r=2;r<rows.length;r++){
+    const row=rows[r]||[];
+    const dateStr=hdr(row[colDate]);
+    if(!dateStr) continue;
+    const ca=toNum(row[colCA]);
+    const mg=toNum(row[colMg]);
+    days.push({ dateStr, ca: ca&&ca>0?ca:null, mg: mg&&mg>0?mg:null });
+  }
+
+  return { annee, mois, days };
+}
+
+const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+function renderMois(){
+  const d=document.getElementById('dash');
+  const mc=DATA['mc'];
+  if(!mc||!mc.days||!mc.days.length){
+    d.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)">
+      Onglet "Mois en cours" introuvable ou vide.<br>
+      <small>Vérifiez le nom de l'onglet dans ⚙️ Configuration (champ "Nom onglet mois en cours").</small>
+    </div>`;
+    d.style.display='block'; return;
+  }
+
+  const { annee, mois, days } = mc;
+  const moisNom = MOIS_LONG[mois-1] || '';
+  const prevYear = annee - 1;
+
+  // Données N-1 pour ce mois depuis DATA[prevYear]
+  const ydPrev = DATA[prevYear];
+  const caRefMois    = ydPrev ? ydPrev.ca[mois-1]  : null;  // CA total mois N-1
+  const mgRefMois    = ydPrev ? ydPrev.mg[mois-1]  : null;  // Marge mois N-1
+
+  // Calculs journées
+  const joursReel  = days.filter(d=>d.ca!==null).length;
+  const joursTotal = days.length;
+  const totalCA    = days.reduce((t,d)=>t+(d.ca||0),0);
+  const totalMg    = days.reduce((t,d)=>t+(d.mg||0),0);
+  const moyJourCA  = joursReel>0 ? totalCA/joursReel : 0;
+  const moyJourMg  = joursReel>0 ? totalMg/joursReel : 0;
+
+  // Jours restants dans le mois (jours calendaires sans données)
+  const joursRestants = days.filter(d=>d.ca===null).length;
+  // Projection fin de mois
+  const projCA = totalCA + moyJourCA * joursRestants;
+  const projMg = totalMg + moyJourMg * joursRestants;
+
+  // Pace vs N-1
+  const paceCA = caRefMois && caRefMois>0 ? (totalCA/caRefMois*100) : null; // % du mois N-1 déjà atteint
+  const paceMg = mgRefMois && mgRefMois>0 ? (totalMg/mgRefMois*100) : null;
+  const evolProjCA = caRefMois && caRefMois>0 ? (projCA-caRefMois)/caRefMois*100 : null;
+  const evolProjMg = mgRefMois && mgRefMois>0 ? (projMg-mgRefMois)/mgRefMois*100 : null;
+
+  // ── KPI
+  let kpi=`<div class="kpis">`;
+  kpi+=mkKpi(`CA cumulé — ${moisNom}`, fe(totalCA), `${joursReel} jours`, null, '');
+  kpi+=mkKpi(`Projection fin ${moisNom}`, fe(Math.round(projCA)), caRefMois?`Réf. ${prevYear} : ${fe(caRefMois)}`:'', evolProjCA, '');
+  if(totalMg>0){
+    const txMg = totalCA>0?totalMg/totalCA*100:null;
+    kpi+=mkKpi(`Marge cumulée`, fe(totalMg), txMg?'Taux : '+f1(txMg)+' %':'', null, 'gold');
+    kpi+=mkKpi(`Projection marge`, fe(Math.round(projMg)), mgRefMois?`Réf. ${prevYear} : ${fe(mgRefMois)}`:'', evolProjMg, 'gold');
+  }
+  kpi+=mkKpi('Moyenne/jour CA', fk(Math.round(moyJourCA)), `sur ${joursReel} jours`, null, '');
+  if(totalMg>0) kpi+=mkKpi('Moyenne/jour Marge', fk(Math.round(moyJourMg)), '', null, 'gold');
+  kpi+='</div>';
+
+  // ── BARRES DE PROGRESSION vs N-1
+  let prog='';
+  if(caRefMois){
+    const pctCA  = Math.min(Math.round(paceCA),150);
+    const pctProj= Math.min(Math.round(evolProjCA>=0?(100+evolProjCA):100+evolProjCA),150);
+    const colCA  = paceCA>=100?'var(--green)':'var(--gold)';
+    prog+=`
+      <div class="mc-progress-wrap">
+        <div class="stitle">Progression vs ${prevYear}</div>
+        <div class="mc-progress-lbl">
+          <span>CA — ${moisNom} ${annee}</span>
+          <span>${f1(paceCA)} % du mois N-1 atteint</span>
+        </div>
+        <div class="mc-bar-track">
+          <div class="mc-bar-n1" style="width:100%;background:var(--border)"></div>
+          <div class="mc-bar-n"  style="width:${pctCA}%;background:${colCA}"></div>
+        </div>
+        <div class="mc-pace">
+          <span>Cumulé : <span class="mc-pace-val ${paceCA>=100?'pos':'neg'}">${fe(totalCA)}</span></span>
+          <span style="color:var(--border)">|</span>
+          <span>Réf. N-1 : <span class="mc-pace-val">${fe(caRefMois)}</span></span>
+          ${evolProjCA!==null?`<span style="color:var(--border)">|</span>
+          <span>Projection : <span class="mc-pace-val ${evolProjCA>=0?'pos':'neg'}">${fe(Math.round(projCA))} (${fev(evolProjCA)})</span></span>`:''}
+        </div>`;
+    if(mgRefMois && totalMg>0){
+      const pctMg=Math.min(Math.round(paceMg),150);
+      const colMg=paceMg>=100?'var(--green)':'var(--gold)';
+      prog+=`
+        <div style="margin-top:16px">
+        <div class="mc-progress-lbl">
+          <span>Marge — ${moisNom} ${annee}</span>
+          <span>${f1(paceMg)} % du mois N-1 atteint</span>
+        </div>
+        <div class="mc-bar-track">
+          <div class="mc-bar-n1" style="width:100%;background:var(--border)"></div>
+          <div class="mc-bar-n"  style="width:${pctMg}%;background:${colMg}"></div>
+        </div>
+        <div class="mc-pace">
+          <span>Cumulé : <span class="mc-pace-val ${paceMg>=100?'pos':'neg'}">${fe(totalMg)}</span></span>
+          <span style="color:var(--border)">|</span>
+          <span>Réf. N-1 : <span class="mc-pace-val">${fe(mgRefMois)}</span></span>
+          ${evolProjMg!==null?`<span style="color:var(--border)">|</span>
+          <span>Projection : <span class="mc-pace-val ${evolProjMg>=0?'pos':'neg'}">${fe(Math.round(projMg))} (${fev(evolProjMg)})</span></span>`:''}
+        </div></div>`;
+    }
+    prog+='</div>';
+  }
+
+  // ── SPARKLINE journalier CA
+  const daysCA = days.filter(d=>d.ca!==null);
+  let spark='';
+  if(daysCA.length>0){
+    const mxCA=Math.max(...daysCA.map(x=>x.ca));
+    spark=`<div class="stitle">CA par jour</div>
+    <div class="chart-wrap">
+      <div class="mc-sparkline">
+        ${days.map(day=>{
+          if(day.ca===null) return `<div class="mc-spark-bar" style="background:var(--border);height:3px;opacity:.3" data-t="${day.dateStr} : —"></div>`;
+          const h=Math.max(4,Math.round(day.ca/mxCA*46));
+          return `<div class="mc-spark-bar" style="background:var(--green);height:${h}px" data-t="${day.dateStr} : ${fe(day.ca)}${day.mg?'  Marge : '+fe(day.mg):''}"></div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── TABLEAU JOURNALIER
+  let tbl=`
+    <div class="stitle">Détail journalier</div>
+    <div class="mc-day-table"><table>
+      <thead><tr>
+        <th style="text-align:left">Date</th>
+        <th>CA TTC</th>
+        ${days.some(d=>d.mg!==null)?'<th>Marge</th><th>Taux</th>':''}
+      </tr></thead><tbody>`;
+  const hasMgCol = days.some(d=>d.mg!==null);
+  let cumCA=0, cumMg=0;
+  for(const day of days){
+    if(day.ca) cumCA+=day.ca;
+    if(day.mg) cumMg+=day.mg;
+    const tx=day.ca&&day.mg?day.mg/day.ca*100:null;
+    tbl+=`<tr ${day.ca===null?'style="opacity:.45"':''}>
+      <td>${day.dateStr}</td>
+      <td>${day.ca!==null?fe(day.ca):'—'}</td>
+      ${hasMgCol?`<td>${day.mg!==null?fe(day.mg):'—'}</td><td>${tx!==null?f1(tx)+' %':'—'}</td>`:''}
+    </tr>`;
+  }
+  tbl+=`<tr class="tot">
+    <td>TOTAL</td>
+    <td>${fe(cumCA)}</td>
+    ${hasMgCol?`<td>${fe(cumMg)}</td><td>${cumCA>0?f1(cumMg/cumCA*100)+' %':'—'}</td>`:''}
+  </tr></tbody></table></div>`;
+
+  d.innerHTML=kpi+prog+spark+tbl;
+  d.style.display='block';
+
+  // Tooltips sparkline
+  d.querySelectorAll('.mc-spark-bar[data-t]').forEach(el=>{
+    el.addEventListener('mousemove',e=>{
+      const tip=document.getElementById('tip');
+      tip.textContent=el.dataset.t;
+      tip.style.display='block';
+      tip.style.left=(e.clientX+12)+'px';
+      tip.style.top=(e.clientY-34)+'px';
+    });
+    el.addEventListener('mouseleave',()=>{document.getElementById('tip').style.display='none';});
+  });
+}
+
 // ─── CHARGEMENT ──────────────────────────────────────────
 async function loadAll(){
   showLoad(true); clearErr(); DATA={}; dbgLines=[];
@@ -392,12 +616,21 @@ async function loadAll(){
       const year = parseInt(tab,10);
       DATA[year]  = parseTab(rows, year);
     }
-    const years = Object.keys(DATA).map(Number).sort();
+    // Charger onglet "Mois en cours"
+    try {
+      const mcRows = await fetchCSV(CFG.sheetId, CFG.tabMC || 'Mois en cours');
+      DATA['mc'] = parseMoisEnCours(mcRows);
+    } catch(e) {
+      DATA['mc'] = null;
+      dbgLines.push('Onglet "Mois en cours" introuvable : '+e.message);
+    }
+    const years = Object.keys(DATA).filter(k=>k!=='mc').map(Number).sort();
     if(!years.length) throw new Error('Aucune donnée.');
-    activeYear = years[years.length-1];
+    activeYear = 'mc'; // démarrer sur mois en cours si dispo
+    if(!DATA['mc']) activeYear = years[years.length-1];
     buildTabs(years);
     showLoad(false);
-    render();
+    if(activeYear==='mc') renderMois(); else render();
     setSyncOk();
   } catch(e){
     showLoad(false);
@@ -410,6 +643,12 @@ async function loadAll(){
 // ─── RENDER ──────────────────────────────────────────────
 function buildTabs(years){
   const el=document.getElementById('tabs'); el.innerHTML='';
+  // Onglet Mois en cours en premier (épinglé)
+  const bMC=document.createElement('button');
+  bMC.className='tab'+(activeYear==='mc'?' active':'');
+  bMC.innerHTML='📅 Mois en cours';
+  bMC.onclick=()=>{activeYear='mc';document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));bMC.classList.add('active');renderMois();};
+  el.appendChild(bMC);
   for(const y of years){
     const b=document.createElement('button');
     b.className='tab'+(y===activeYear?' active':'');
@@ -611,6 +850,7 @@ function openCfg(){
   document.getElementById('cTabs').value=CFG.tabs.join(',');
   document.getElementById('cRowCA').value=CFG.rowCA;
   document.getElementById('cRowM').value=CFG.rowM;
+  document.getElementById('cTabMC').value=CFG.tabMC||'Mois en cours';
   document.getElementById('cfgModal').classList.add('open');
 }
 function closeCfg(){document.getElementById('cfgModal').classList.remove('open');}
@@ -620,7 +860,8 @@ function saveCfg(){
   const rCA=parseInt(document.getElementById('cRowCA').value,10)||2;
   const rM=parseInt(document.getElementById('cRowM').value,10)||0;
   if(!id||!tabs)return alert('Champs obligatoires.');
-  CFG={sheetId:id,tabs:tabs.split(',').map(t=>t.trim()).filter(Boolean),rowCA:rCA,rowM:rM};
+  const tabMC=document.getElementById('cTabMC').value.trim()||'Mois en cours';
+  CFG={sheetId:id,tabs:tabs.split(',').map(t=>t.trim()).filter(Boolean),rowCA:rCA,rowM:rM,tabMC};
   localStorage.setItem('ph3',JSON.stringify(CFG));
   closeCfg();
   loadAll();
