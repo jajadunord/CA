@@ -522,10 +522,34 @@ function renderMois(){
   const totalCA     = daysAvecCA.reduce((t,d)=>t+d.ca,0);
   const totalMg     = daysAvecMg.reduce((t,d)=>t+d.mg,0);
   const moyCA       = joursReel>0 ? totalCA/joursReel : 0;
-  const moyMg       = joursReel>0 ? totalMg/joursReel : 0;
-  const joursVides  = days.filter(d=>d.ca===null).length;
-  const projCA      = totalCA + moyCA*joursVides;
-  const projMg      = totalMg + moyMg*joursVides;
+  const joursReelMg = daysAvecMg.length;
+  const moyMg       = joursReelMg>0 ? totalMg/joursReelMg : 0;
+
+  // Jours restants ouvrés : lignes sans CA ET dont la date n'est pas un dimanche
+  // Parser la date FR "DD/MM/YYYY" → objet Date pour tester getDay()===0
+  function parseDateFR(str) {
+    const p = str.split(/[\/\-\.]/);
+    if(p.length!==3) return null;
+    // p[0]=jour, p[1]=mois, p[2]=année
+    const d = new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function estDimanche(dateStr) {
+    const d = parseDateFR(dateStr);
+    return d ? d.getDay()===0 : false;
+  }
+
+  // Jours ouvrés restants = jours sans CA et non dimanche
+  const joursRestantsOuvres = days.filter(d=>d.ca===null && !estDimanche(d.dateStr)).length;
+  // Jours ouvrés travaillés réels (avec CA) — pour info dans le KPI
+  const joursOuvresPasses   = joursReel;
+  // Jours ouvrés total du mois = passés + restants
+  const joursOuvresTotal    = joursOuvresPasses + joursRestantsOuvres;
+
+  const projCA = totalCA + moyCA * joursRestantsOuvres;
+  const projMg = totalMg + moyMg * joursRestantsOuvres;
+
+  dbgLines.push(`[proj] joursOeuvresPasses=${joursOuvresPasses} joursRestantsOuvres=${joursRestantsOuvres} total=${joursOuvresTotal}`);
   const txMg        = totalCA>0 ? totalMg/totalCA*100 : null;
   dbgLines.push(`[render] joursReel=${joursReel} totalCA=${totalCA} totalMg=${totalMg}`);
 
@@ -540,11 +564,11 @@ function renderMois(){
   // ────────────────────────────────────────────────────────────
   const kpi = `<div class="kpis">
     ${mkKpi('CA cumulé — '+moisNom, fe(totalCA), joursReel+' jour'+(joursReel>1?'s':''), null, '')}
-    ${mkKpi('Projection fin '+moisNom, fe(Math.round(projCA)), caRef?'Réf. '+prevYear+' : '+fe(caRef):'', evolProjCA, '')}
+    ${mkKpi('Projection fin '+moisNom, fe(Math.round(projCA)), caRef?'Réf. '+prevYear+' : '+fe(caRef):'Basé sur '+joursRestantsOuvres+' j. restants', evolProjCA, '')}
     ${totalMg>0 ? mkKpi('Marge cumulée', fe(totalMg), txMg?'Taux : '+f1(txMg)+' %':'', null, 'gold') : ''}
     ${totalMg>0 ? mkKpi('Projection marge', fe(Math.round(projMg)), mgRef?'Réf. '+prevYear+' : '+fe(mgRef):'', evolProjMg, 'gold') : ''}
-    ${mkKpi('Moyenne/jour CA', fk(Math.round(moyCA)), 'sur '+joursReel+' jours', null, '')}
-    ${totalMg>0 ? mkKpi('Moyenne/jour Marge', fk(Math.round(moyMg)), '', null, 'gold') : ''}
+    ${mkKpi('Moyenne/jour CA', fk(Math.round(moyCA)), 'sur '+joursOuvresPasses+' j. ouvrés ('+joursOuvresTotal+' ce mois)', null, '')}
+    ${totalMg>0 ? mkKpi('Moyenne/jour Marge', fk(Math.round(moyMg)), 'sur '+joursReelMg+' j. ouvrés', null, 'gold') : ''}
   </div>`;
 
   // ────────────────────────────────────────────────────────────
